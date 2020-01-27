@@ -1,6 +1,6 @@
 # ObscureServer
 
-A is a small HTTP + WebDAV server written in BlitzMaxNG. 
+A small HTTP + WebDAV server written in BlitzMaxNG. 
 
 It is by no means complete, implementing only the most basic stuff and not really adhering to RFCs. 
 
