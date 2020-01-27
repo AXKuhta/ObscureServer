@@ -1,6 +1,6 @@
 # ObscureServer
 
-A small HTTP + WebDAV server written in BlitzMaxNG. 
+A small HTTP + WebDAV server written in [BlitzMaxNG](https://github.com/bmx-ng/bmx-ng). 
 
 It is by no means complete, implementing only the most basic stuff and not really adhering to RFCs. 
 
@@ -40,7 +40,7 @@ The following list of tested software should give you an idea about the server's
 
 ## Building
 
-Any recent version of BlitzMaxNG should work (This code will not compile on classic BlitzMax!)
+Any [recent version of BlitzMaxNG](https://github.com/bmx-ng/bmx-ng/releases) should work (This code will not compile on classic BlitzMax!)
 
 Additionally it needs [BaH.zstd](https://github.com/maxmods/bah.mod/tree/master/zstd.mod). If you don't want to download the entire bah.mod repository just to use this single module, I can provide you with a [standalone copy](https://drive.google.com/open?id=19bKMtVVkFGps5XnjB8qLUGs5liB_vE72) (zstd version 1.4.3). Extract the contents into the mod directory of your BlitzMax installation.
 
