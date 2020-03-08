@@ -288,16 +288,21 @@ Function ProcessMoveRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 			
 		Case 1
 			StatusCopy = CopyFile(ParsedRequest.Target, ParsedRequest.Destination)
-			StatusDelete = DeleteFile(ParsedRequest.Target)
+			If StatusCopy
+				StatusDelete = DeleteFile(ParsedRequest.Target)
+			End If
 			
 		Case 2
 			StatusCopy = CopyDir(ParsedRequest.Target, ParsedRequest.Destination)
-			StatusDelete = DeleteDir(ParsedRequest.Target)
+			If StatusCopy
+				StatusDelete = DeleteDir(ParsedRequest.Target)
+			End If
 		
 	End Select
 	
 	If (StatusCopy = 0) Or (StatusDelete = 0)
-		SendError(500, Parameters, "Failed to move ["+ParsedRequest.Target+"]")
+		LoggedPrint("Failed to move ["+ParsedRequest.Target+"] -> ["+ParsedRequest.Destination+"]!", Parameters.ThreadID)
+		SendError(500, Parameters, "Failed to move ["+ParsedRequest.Target+"] -> ["+ParsedRequest.Destination+"]")
 	End If
 
 	SendSuccess(Parameters)
