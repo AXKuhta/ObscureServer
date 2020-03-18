@@ -310,6 +310,7 @@ End Function
 
 Function ProcessHEADRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThreadParameters)
 	Local ClientStream:TStream = Parameters.ClientStream
+	Local FilenameCached:String
 	Local DownloadMode:Int
 	Local RangeSize:Long
 	Local Size:Long
@@ -347,13 +348,20 @@ Function ProcessHEADRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 		Case 2 ' Compressed and not a slice
 			WriteLine(ClientStream, "HTTP/1.1 200 OK")
 			WriteLine(ClientStream, "Content-Encoding: gzip")
+			
 			' Try to stat the compression cache file, that may yield the size
 			If Parameters.EnableCaching = 1
-				If FileTime(ParsedRequest.Target) < FileTime(Parameters.CachingLocation + ParsedRequest.Target + ".gzc")
-					WriteLine(ClientStream, "Content-Length: " + FileSize(Parameters.CachingLocation + ParsedRequest.Target + ".gzc"))
+				FilenameCached = Parameters.CachingLocation + ParsedRequest.Target + "." + Parameters.EncodingMode + "c"
+			
+				If FileType(FilenameCached)
+					' If the compressed file was cached, check whether the cache is outdated
+					' If it isn't outdated, we can provide the correct size
+					' If it is outdated, we won't send the Content-Length
+					If FileTime(ParsedRequest.Target) < FileTime(FilenameCached)
+						WriteLine(ClientStream, "Content-Length: " + FileSize(FilenameCached))
+					End If
 				Else
-					' We do that when the cache is outdated
-					WriteLine(ClientStream, "Content-Length: 0")
+					' And if the file wasn't cached, we won't send the Content-Length
 				End If
 			End If
 						
@@ -387,7 +395,7 @@ Function DecideDownloadMode(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 	
 	Local Compressable:Int = (Parameters.EnableCompression = 1) And (Size < Parameters.CompressionSizeLimit) And (Parameters.EncodingMode <> "")
 	Local Ranged:Int = (ParsedRequest.RangeStart Or ParsedRequest.RangeStop)
-		
+	
 	If (Parameters.RangesAllowed = 0) And Ranged
 		LoggedPrint("Got a ranged request but ranges are disabled.", Parameters.ThreadID)
 		SendError(416, Parameters)
