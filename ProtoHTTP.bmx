@@ -130,7 +130,7 @@ Function ProcessHTTPRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 		ProcessHEADRequest(ParsedRequest, Parameters)
 			
 	ElseIf ParsedRequest.Action = "OPTIONS"
-		SendSuccess(Parameters, 200, "", 1)
+		SendSuccess(200, Parameters, "", 1)
 							
 	End If
 
@@ -237,7 +237,7 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	End If
 	
 	If Status <> 0
-		SendSuccess(Parameters, ResponseCode)
+		SendSuccess(ResponseCode, Parameters)
 	Else
 		LoggedPrint("Failed to create or update ["+ParsedRequest.Target+"]!", Parameters.ThreadID)
 		SendError(500, Parameters, "Failed to create or update the file.")
@@ -261,7 +261,7 @@ Function ProcessDeleteRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	Status = DeleteFile(ParsedRequest.Target)
 	
 	If Status
-		SendSuccess(Parameters)
+		SendSuccess(200, Parameters)
 	Else
 		SendError(500, Parameters, "Failed to delete ["+ParsedRequest.Target+"]")
 	End If
@@ -305,7 +305,7 @@ Function ProcessMoveRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 		SendError(500, Parameters, "Failed to move ["+ParsedRequest.Target+"] -> ["+ParsedRequest.Destination+"]")
 	End If
 
-	SendSuccess(Parameters)
+	SendSuccess(200, Parameters)
 End Function
 
 Function ProcessHEADRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThreadParameters)
@@ -496,7 +496,7 @@ End Function
 
 ' In a scope of a single request this function will send a final OK status
 ' If the connection is keep-alive, the client shouldn't disconnect after that and could send another request
-Function SendSuccess(Parameters:ServeThreadParameters, SuccessCode:Int = 200, AdditionalText:String = "", OptionsResponse:Int = 0)
+Function SendSuccess(SuccessCode:Int, Parameters:ServeThreadParameters, AdditionalText:String = "", OptionsResponse:Int = 0)
 	Local StatusText:String
 	
 	Select SuccessCode
