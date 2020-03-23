@@ -1,4 +1,4 @@
-Import BRL.XML
+Import Text.XML
 Import "Utils.bmx"
 Import "Parameters.bmx"
 Import "DataLevel.bmx"
