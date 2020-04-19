@@ -2,9 +2,11 @@ Framework BRL.StandardIO
 Import BRL.System
 Import BRL.Retro
 Import "microseconds.c"
+Import "http_time.c"
 
 Extern
 	Function microseconds:ULong()
+	Function http_time:Int(memory:Byte Ptr, epoch_time:ULong)
 End Extern
 
 
@@ -89,5 +91,22 @@ Function GenerateRandomString:String(Length:Int)
 	
 	Result = String.FromBytes(Memory, Length)
 	MemFree(Memory)
+	Return Result
+End Function
+
+' This function converts time produced by functions like FileTime() into an HTTP-compliant human readable string
+' Keep in mind that it also converts to GMT/UTC from local time
+Function GetHTTPTime:String(EpochTime:Int)
+	Local RawString:Byte Ptr = MemAlloc(128)
+	Local Result:String
+	
+	If http_time(RawString, ULong(EpochTime)) > 0
+		Result = String.FromCString(RawString)
+	Else
+		Result = "Time conversion error"
+	End If
+		
+	MemFree(RawString)
+	
 	Return Result
 End Function
