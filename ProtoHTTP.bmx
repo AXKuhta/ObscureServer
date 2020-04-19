@@ -347,7 +347,7 @@ Function ProcessHEADRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 			
 		Case 2 ' Compressed and not a slice
 			WriteLine(ClientStream, "HTTP/1.1 200 OK")
-			WriteLine(ClientStream, "Content-Encoding: gzip")
+			WriteLine(ClientStream, "Content-Encoding: " + Parameters.EncodingMode)
 			
 			' Try to stat the compression cache file, that may yield the size
 			If Parameters.EnableCaching = 1
