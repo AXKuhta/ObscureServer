@@ -157,7 +157,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 		
-		ParsedRequest.Target = NormifySpaces(ParsedRequest.Target) ' Turns "%20" into spaces
+		ParsedRequest.Target = URLDecode(ParsedRequest.Target) ' Turns "%20" into spaces
 		
 		If (ParsedRequest.Target.Contains("//") Or ParsedRequest.Target.Contains(".."))
 			LoggedPrint("ABORTING: Suspicious request target.", Parameters.ThreadID)

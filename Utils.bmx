@@ -45,39 +45,62 @@ Function ReadBytes:Byte[](Stream:TStream, Length:Int)
 	Return RetArray
 End Function
 
-
+' Converts "ff" or "FF" to 255
+' Or "A5" to 165 
 Function HexToDec8:Byte(Inp:String)
-	Local AsciiToHexTable:Byte[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, $A, $B, $C, $D, $E, $F, ..
-									0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ..
-									$A, $B, $C, $D, $E, $F]
+	Local LUT:Byte[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, $A, $B, $C, $D, $E, $F, ..
+						0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ..
+						$A, $B, $C, $D, $E, $F]
 									
-	Local ASCIIArray:Byte Ptr = Inp.toCString()
-	Local ReturnValue:Byte = (AsciiToHexTable[ASCIIArray[0] - 48] Shl 4) | AsciiToHexTable[ASCIIArray[1] - 48]
-	
-	MemFree(ASCIIArray)
-	
-	Return ReturnValue
+	Return (LUT[Inp[0] - 48] Shl 4) | LUT[Inp[1] - 48]
+End Function
+
+' Alternative version under the same name that takes two "chars" instead of a string
+Function HexToDec8:Byte(First:Int, Second:Int)
+	Local LUT:Byte[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, $A, $B, $C, $D, $E, $F, ..
+						0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ..
+						$A, $B, $C, $D, $E, $F]
+									
+	Return (LUT[First - 48] Shl 4) | LUT[Second - 48]
 End Function
 
 
-Function NormifySpaces:String(Inp:String)	
-	Local NormifiedLine:String
-	Local InstrStartPosition:Int = 1
+Function URLDecode:String(Inp:String)
+	If Not Inp.Find("%") Then Return Inp ' No action required if no %'s found
 	
-	If Instr(Inp, "%", InstrStartPosition) = 0 Then Return Inp ' Not changes required if no %s found
+	Local DecodedLine:String
+	Local StartPosition:Int = 0
 	
-	While Instr(Inp, "%", InstrStartPosition) <> 0
-		NormifiedLine = NormifiedLine + Mid(Inp, InstrStartPosition, (Instr(Inp, "%", InstrStartPosition) - InstrStartPosition))
-		NormifiedLine = NormifiedLine + Chr(HexToDec8(Mid(Inp, Instr(Inp, "%", InstrStartPosition) + 1, 2)))
+	Local InpLen:Size_T = Len(Inp)
+	
+	Local iInp:Int = 0
+	Local iOut:Int = 0
+	
+	Local RawDecodedLine:Byte Ptr = MemAlloc(InpLen)
+	
+	While iInp < InpLen
+		' 37 is "%"
+		If Inp[iInp] = 37 
+			If iInp + 2 >= InpLen Then Exit
+			
+			RawDecodedLine[iOut] = HexToDec8(Inp[iInp + 1], Inp[iInp + 2])
+			iInp :+ 3
+			iOut :+ 1
+		Else
+			RawDecodedLine[iOut] = Inp[iInp]
+			iInp :+ 1
+			iOut :+ 1
+		End If
+	Wend 
+	
+	' Make sure to insert the null-terminator at the end
+	RawDecodedLine[iOut] = 0
 		
-		'Print "Adding char: " + HexToDec(Mid(Inp, Instr(Inp, "%", InstrStartPosition) + 1, 2))
-		
-		InstrStartPosition = Instr(Inp, "%", InstrStartPosition) + 3
-	Wend
+	DecodedLine = String.FromUTF8String(RawDecodedLine)
 	
-	NormifiedLine = NormifiedLine + Mid(Inp, InstrStartPosition, (Len(Inp) - InstrStartPosition) + 1)
+	MemFree(RawDecodedLine)
 	
-	Return NormifiedLine	
+	Return DecodedLine	
 End Function
 
 ' This function will generate a completely random string
