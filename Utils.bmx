@@ -31,20 +31,6 @@ Function PrintArray(Array:String[])
 	Next
 End Function
 
-
-Function ReadBytes:Byte[](Stream:TStream, Length:Int)
-	Local RetArray:Byte[]
-	
-	If Length = 0 Then Print "Error: ReadBytes called with Length = 0. Aborting." ; Return Null
-	
-	For Local i=0 To (Length - 1)
-		RetArray = RetArray[..(i+1)]
-		RetArray[i] = ReadByte(Stream)
-	Next
-		
-	Return RetArray
-End Function
-
 ' Converts "ff" or "FF" to 255
 ' Or "A5" to 165 
 Function HexToDec8:Byte(Inp:String)
