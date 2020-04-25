@@ -69,6 +69,9 @@ Function ParseDestination:String(Destination:String)
 	' Then get rid of the domain
 	Destination = Mid(Destination, Destination.Find("/") + 2)
 	
+	' Run URLDecode on the shortened string
+	Destination = URLDecode(Destination)
+	
 	Return Destination
 End Function
 
