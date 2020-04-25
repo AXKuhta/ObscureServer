@@ -7,6 +7,7 @@ Import "http_time.c"
 Extern
 	Function microseconds:ULong()
 	Function http_time:Int(memory:Byte Ptr, epoch_time:ULong)
+	Function strlen:Size_T(memory:Byte Ptr)
 End Extern
 
 

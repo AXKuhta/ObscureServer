@@ -184,14 +184,16 @@ Function SendText(PayloadText:String, Parameters:ServeThreadParameters)
 	Local ClientStream:TStream = Parameters.ClientStream
 	Local CompressedMemory:MemoryVec
 	Local TextLength:Int = Len(PayloadText)
-	Local ASCIIText:Byte Ptr
+	Local UTF8Text:Byte Ptr
 	
+	' Minor inconsistency: UTF-8 text could weigh more that 256 bytes while being shorter than 256 characters
+
 	If (TextLength > 256) And (TextLength < Parameters.CompressionSizeLimit) And (Parameters.EncodingMode <> "")
 		LoggedPrint("Compressing text ("+Parameters.EncodingMode+").", Parameters.ThreadID)
 				
-		ASCIIText = PayloadText.toCString() ' Please note: problems with non-ASCII characters are likely to occur.
-		
-		CompressedMemory = CompressMemory(ASCIIText, TextLength, Parameters)
+		UTF8Text = PayloadText.toUTF8String()
+				
+		CompressedMemory = CompressMemory(UTF8Text, strlen(UTF8Text), Parameters)
 			
 		If CompressedMemory.Pointer
 			WriteLine(ClientStream, "Content-Encoding: " + Parameters.EncodingMode)
@@ -203,7 +205,7 @@ Function SendText(PayloadText:String, Parameters:ServeThreadParameters)
 			MemFree(CompressedMemory.Pointer)
 		End If
 			
-		MemFree(ASCIIText)
+		MemFree(UTF8Text)
 	Else
 		WriteLine(ClientStream, "Content-Length: " + TextLength)
 		WriteLine(ClientStream, "")
@@ -405,7 +407,7 @@ Function UpdateFile(Filename:String, Data:Byte Ptr, DataLength:Long)
 End Function
 
 Function RunAbilityCheck:Int(Parameters:ServeThreadParameters, EnableTimeout:Int = 0)
-	Local InactiveTime:Long = MilliSecs() - Parameters.ThreadLastActivityMS
+	Local InactiveTime:ULong = MilliSecs() - Parameters.ThreadLastActivityMS
 	
 	If (InactiveTime > Parameters.Timeout) And (EnableTimeout = 1)
 			LoggedPrint("Timed out.", Parameters.ThreadID)
