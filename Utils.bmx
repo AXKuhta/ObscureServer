@@ -52,7 +52,7 @@ End Function
 
 
 Function URLDecode:String(Inp:String)
-	If Not Inp.Find("%") Then Return Inp ' No action required if no %'s found
+	If Not Instr(Inp, "%") Then Return Inp ' No action required if no %'s found
 	
 	Local DecodedLine:String
 	Local StartPosition:Int = 0
