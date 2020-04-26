@@ -183,17 +183,15 @@ End Function
 Function SendText(PayloadText:String, Parameters:ServeThreadParameters)
 	Local ClientStream:TStream = Parameters.ClientStream
 	Local CompressedMemory:MemoryVec
-	Local TextLength:Int = Len(PayloadText)
-	Local UTF8Text:Byte Ptr
+	Local UTF8Text:Byte Ptr = PayloadText.toUTF8String()
+	Local TextLength:Size_T = strlen(UTF8Text)
 	
 	' Minor inconsistency: UTF-8 text could weigh more that 256 bytes while being shorter than 256 characters
 
 	If (TextLength > 256) And (TextLength < Parameters.CompressionSizeLimit) And (Parameters.EncodingMode <> "")
 		LoggedPrint("Compressing text ("+Parameters.EncodingMode+").", Parameters.ThreadID)
 				
-		UTF8Text = PayloadText.toUTF8String()
-				
-		CompressedMemory = CompressMemory(UTF8Text, strlen(UTF8Text), Parameters)
+		CompressedMemory = CompressMemory(UTF8Text, TextLength, Parameters)
 			
 		If CompressedMemory.Pointer
 			WriteLine(ClientStream, "Content-Encoding: " + Parameters.EncodingMode)
@@ -204,15 +202,14 @@ Function SendText(PayloadText:String, Parameters:ServeThreadParameters)
 		
 			MemFree(CompressedMemory.Pointer)
 		End If
-			
-		MemFree(UTF8Text)
 	Else
 		WriteLine(ClientStream, "Content-Length: " + TextLength)
 		WriteLine(ClientStream, "")
 		
-		WriteLine(ClientStream, PayloadText)
+		SendMemory(UTF8Text, TextLength, Parameters)
 	End If
 
+	MemFree(UTF8Text)
 End Function
 
 '
