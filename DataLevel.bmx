@@ -186,8 +186,6 @@ Function SendText(PayloadText:String, Parameters:ServeThreadParameters)
 	Local UTF8Text:Byte Ptr = PayloadText.toUTF8String()
 	Local TextLength:Size_T = strlen(UTF8Text)
 	
-	' Minor inconsistency: UTF-8 text could weigh more that 256 bytes while being shorter than 256 characters
-
 	If (TextLength > 256) And (TextLength < Parameters.CompressionSizeLimit) And (Parameters.EncodingMode <> "")
 		LoggedPrint("Compressing text ("+Parameters.EncodingMode+").", Parameters.ThreadID)
 				
