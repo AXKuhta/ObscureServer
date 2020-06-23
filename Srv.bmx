@@ -16,7 +16,9 @@ Local ThreadsTotal:ULong
 Print "Server is up on port " + Port 
 
 While True
-	SocketConnection = SocketAccept(Socket)
+	' You can enable blocking mode on SocketAccept() by passing -1 as timeout
+	' You can also set it to some amount of time (in ms), if you still want the non-blocking mode
+	SocketConnection = SocketAccept(Socket, -1)
 
 	If SocketConnection
 		Parameters = New ServeThreadParameters
@@ -47,5 +49,4 @@ While True
 		ThreadsTotal :+ 1
 	End If
 	
-	Delay 1	
 Wend
