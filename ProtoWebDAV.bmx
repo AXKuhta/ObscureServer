@@ -15,10 +15,10 @@ Function ProcessWebDAVRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	Local ResponseString:String
 	Local TargetPath:String 
 	
-	LoggedPrint("WebDAV request.", Parameters.ThreadID)
+	LoggedPrint("WebDAV request.")
 	
 	If Not Parameters.WebDAVAllowed
-		LoggedPrint("But WebDAV is disabled. Responding with 405.", Parameters.ThreadID)
+		LoggedPrint("But WebDAV is disabled. Responding with 405.")
 		SendError(405, Parameters)
 		Return
 	End If
@@ -29,9 +29,9 @@ Function ProcessWebDAVRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		Local XMLTree:TxmlDoc = TxmlDoc.readDoc(RequestString)
 		
 		' TODO: Handle the creation of collections (i.e. folders)
-		' LoggedPrint("Client XML: " + XMLTree.ToStringFormat(True), Parameters.ThreadID)
+		' LoggedPrint("Client XML: " + XMLTree.ToStringFormat(True))
 	Else
-		LoggedPrint("Client didn't send any XML payload for PROPFIND!", Parameters.ThreadID)
+		LoggedPrint("Client didn't send any XML payload for PROPFIND!")
 	End If
 	
 	
@@ -51,7 +51,7 @@ Function ProcessWebDAVRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		
 	Select FileType(TargetPath)
 		Case 0 ' Does not exist or no permission to read or corrupted on disk
-			LoggedPrint("404'd during a WebDAV request: " + TargetPath + " not found.", Parameters.ThreadID)
+			LoggedPrint("404'd during a WebDAV request: " + TargetPath + " not found.")
 			SendError(404, Parameters, "Error 404. File ["+ TargetPath +"] was not found.")		
 			Return
 

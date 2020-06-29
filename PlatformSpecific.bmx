@@ -29,11 +29,11 @@ End Extern
 	End Function
 ?
 
-Function PrintClientIP(ClientSocket:TSocket, ThreadID:ULong, LookupHostname:Int = 0)
-	LoggedPrint("IPv4: " + SocketRemoteIP(ClientSocket), ThreadID)
+Function PrintClientIP(ClientSocket:TSocket, LookupHostname:Int = 0)
+	LoggedPrint("IPv4: " + SocketRemoteIP(ClientSocket))
 	
 	If LookupHostname = 1
-		LoggedPrint("Hostname: " + HostName(SocketRemoteIP(ClientSocket)), ThreadID)
+		LoggedPrint("Hostname: " + HostName(SocketRemoteIP(ClientSocket)))
 	End If
 End Function
 

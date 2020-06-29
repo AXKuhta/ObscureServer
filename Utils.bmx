@@ -1,6 +1,7 @@
 Framework BRL.StandardIO
 Import BRL.System
 Import BRL.Retro
+Import "Parameters.bmx"
 Import "microseconds.c"
 Import "http_time.c"
 
@@ -11,7 +12,10 @@ Extern
 End Extern
 
 
-Function LoggedPrint(ToPrint:String, ThreadID:ULong = 0)
+Function LoggedPrint(ToPrint:String)
+	' You can fetch the data of the current thread by using the (undocumented) _data field of TThread
+	Local ThreadID:ULong = ServeThreadParameters(CurrentThread()._data).ThreadID
+
 	Print "[" + CurrentDate() + " " + CurrentTime() + "][ThreadID: " + ThreadID + "] " + ToPrint
 End Function
 
@@ -102,6 +106,34 @@ Function GenerateRandomString:String(Length:Int)
 	Result = String.FromBytes(Memory, Length)
 	MemFree(Memory)
 	Return Result
+End Function
+
+
+Function GetKiloseconds:String(ms:Long)
+	Local Unit:String
+	Local Time:String
+	
+	If ms < 1000
+		Time = ms
+		Unit = "ms"
+	ElseIf ms < 1000 * 1000
+		Time = ms / 10
+		Unit = "seconds"
+	ElseIf ms < 1000 * 1000 * 1000
+		Time = ms / 1000 / 10
+		Unit = "kiloseconds"
+	ElseIf ms < 1000 * 1000 * 1000 * 1000
+		Time = ms / 1000 / 1000 / 10
+		Unit = "megaseconds"
+	Else
+		Time = ms / 1000 / 1000 / 1000 / 10
+		Unit = "gigaseconds"
+	End If
+	
+	' Insert a point before the two rightmost digits
+	Time = Left(Time, Len(Time) - 2) + "." + Right(Time, 2)
+		
+	Return Time + " " + Unit
 End Function
 
 ' This function converts time produced by functions like FileTime() into an HTTP-compliant human readable string

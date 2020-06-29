@@ -17,12 +17,12 @@ Function SendFile(Filename:String, Parameters:ServeThreadParameters)
 	Local FileStream:TStream = OpenFile(Filename)
 	Local Size:Long = FileSize(Filename)
 	
-	LoggedPrint("Sending ["+Filename+"].", Parameters.ThreadID)
+	LoggedPrint("Sending ["+Filename+"].")
 	
 	WriteLine(Parameters.ClientStream, "Content-Length: " + Size)
 	SendStreamToClient(FileStream, Size, Parameters)
 	
-	LoggedPrint("File ["+Filename+"] sent.", Parameters.ThreadID)
+	LoggedPrint("File ["+Filename+"] sent.")
 	CloseFile(FileStream)
 End Function
 
@@ -39,13 +39,13 @@ Function SendFileSlice(Filename:String, Start:Long, Stop:Long, Parameters:ServeT
 	
 	SeekStream(FileStream, Start)
 	
-	LoggedPrint("Sending a slice of ["+Filename+"]. Size: " + Size + " bytes.", Parameters.ThreadID)
+	LoggedPrint("Sending a slice of ["+Filename+"]. Size: " + Size + " bytes.")
 	
 	WriteLine(Parameters.ClientStream, "Content-Range: bytes " + Start + "-" + Stop  + "/" + FileSize(Filename))
 	WriteLine(Parameters.ClientStream, "Content-Length: " + Size)
 	SendStreamToClient(FileStream, Size, Parameters)
 	
-	LoggedPrint("Slice of ["+Filename+"] sent.", Parameters.ThreadID)
+	LoggedPrint("Slice of ["+Filename+"] sent.")
 	CloseFile(FileStream)
 End Function
 
@@ -59,30 +59,30 @@ Function SendCompressedFile(Filename:String, Parameters:ServeThreadParameters)
 	If Parameters.EnableCaching = 1
 		If FileType(FilenameCached)
 			If FileTime(Filename) < FileTime(FilenameCached)
-				LoggedPrint("Cache hit.", Parameters.ThreadID)
+				LoggedPrint("Cache hit.")
 				FileStream = OpenFile(FilenameCached)
 				If FileStream
 					WriteLine(ClientStream, "Content-Encoding: " + Parameters.EncodingMode)
 					WriteLine(ClientStream, "Content-Length: " + FileSize(FilenameCached))
 					
 					SendStreamToClient(FileStream, FileSize(FilenameCached), Parameters)
-					LoggedPrint("File ["+Filename+"] sent from compression cache.", Parameters.ThreadID)
+					LoggedPrint("File ["+Filename+"] sent from compression cache.")
 					CloseFile(FileStream)
 					Return
 				Else
 					' If this happens, we will compress the file again instead of aborting
-					LoggedPrint("Failed to open ["+FilenameCached+"]!", Parameters.ThreadID)
+					LoggedPrint("Failed to open ["+FilenameCached+"]!")
 				End If
 			Else
-				LoggedPrint("Cache misfire (Outdated cache).", Parameters.ThreadID)
+				LoggedPrint("Cache misfire (Outdated cache).")
 			End If
 		Else
-			LoggedPrint("Cache misfire (File wasn't cached).", Parameters.ThreadID)
+			LoggedPrint("Cache misfire (File wasn't cached).")
 		End If
 	End If
 	
 	
-	LoggedPrint("Compressing ["+Filename+"] ("+Parameters.EncodingMode+").", Parameters.ThreadID)
+	LoggedPrint("Compressing ["+Filename+"] ("+Parameters.EncodingMode+").")
 	FileStream = OpenFile(Filename)
 	
 	Local UncompressedMemory:Byte Ptr = MemAlloc(Size)
@@ -99,9 +99,9 @@ Function SendCompressedFile(Filename:String, Parameters:ServeThreadParameters)
 	
 		SendMemory(CompressedMemory.Pointer, CompressedMemory.Size, Parameters)
 		
-		LoggedPrint("File ["+Filename+"] sent.", Parameters.ThreadID)
+		LoggedPrint("File ["+Filename+"] sent.")
 	Else
-		LoggedPrint("Failed to compress ["+Filename+"].", Parameters.ThreadID)
+		LoggedPrint("Failed to compress ["+Filename+"].")
 		MemFree(UncompressedMemory)	
 		CloseFile(FileStream)
 		Return
@@ -109,13 +109,13 @@ Function SendCompressedFile(Filename:String, Parameters:ServeThreadParameters)
 	
 	If Parameters.EnableCaching = 1
 		If Not ReadDir(Parameters.CachingLocation)
-			LoggedPrint("Unable to read the caching directory! Assuming that it doesn't yet exist and trying to create it. TODO: Make this into an error for production, software shouldn't go around and create directories from a known malformed configuration. A pre-startup script should set up the caching directory if it needs to be set up.", Parameters.ThreadID)
+			LoggedPrint("Unable to read the caching directory! Assuming that it doesn't yet exist and trying to create it. TODO: Make this into an error for production, software shouldn't go around and create directories from a known malformed configuration. A pre-startup script should set up the caching directory if it needs to be set up.")
 			CreateDir(Parameters.CachingLocation)
 		End If
 		
 		If ExtractDir(Filename) ' Check if the file was stored in an additional folder in the server root directory
 			If Not ReadDir(Parameters.CachingLocation + ExtractDir(Filename))
-				LoggedPrint("Creating a directory to cache a file.", Parameters.ThreadID)
+				LoggedPrint("Creating a directory to cache a file.")
 				CreateDir(Parameters.CachingLocation + ExtractDir(Filename))
 			End If
 		End If
@@ -125,7 +125,7 @@ Function SendCompressedFile(Filename:String, Parameters:ServeThreadParameters)
 			FileCached.WriteBytes(CompressedMemory.Pointer, CompressedMemory.Size)
 			CloseFile(FileCached)
 		Else
-			LoggedPrint("Failed to write ["+FilenameCached+"]!", Parameters.ThreadID)
+			LoggedPrint("Failed to write ["+FilenameCached+"]!")
 		End If
 	End If
 
@@ -149,7 +149,7 @@ Function SendCompressedFileSlice(Filename:String, Start:Long, Stop:Long, Paramet
 		Size = Stop - Start + 1
 	End If
 		
-	LoggedPrint("Compressing a slice of ["+Filename+"] ("+Parameters.EncodingMode+").", Parameters.ThreadID)
+	LoggedPrint("Compressing a slice of ["+Filename+"] ("+Parameters.EncodingMode+").")
 	
 	FileStream = OpenFile(Filename)
 	SeekStream(FileStream, Start)
@@ -168,7 +168,7 @@ Function SendCompressedFileSlice(Filename:String, Start:Long, Stop:Long, Paramet
 	
 		SendMemory(CompressedMemory.Pointer, CompressedMemory.Size, Parameters)
 	
-		LoggedPrint("Compressed slice of ["+Filename+"] sent.", Parameters.ThreadID)
+		LoggedPrint("Compressed slice of ["+Filename+"] sent.")
 	
 		MemFree(CompressedMemory.Pointer)
 	End If
@@ -187,10 +187,10 @@ Function SendText(PayloadText:String, Parameters:ServeThreadParameters)
 	Local TextLength:Size_T = strlen(UTF8Text)
 	
 	If (TextLength > 256) And (TextLength < Parameters.CompressionSizeLimit) And (Parameters.EncodingMode <> "")
-		LoggedPrint("Compressing text ("+Parameters.EncodingMode+").", Parameters.ThreadID)
+		LoggedPrint("Compressing text ("+Parameters.EncodingMode+").")
 				
 		CompressedMemory = CompressMemory(UTF8Text, TextLength, Parameters)
-			
+		
 		If CompressedMemory.Pointer
 			WriteLine(ClientStream, "Content-Encoding: " + Parameters.EncodingMode)
 			WriteLine(ClientStream, "Content-Length: " + CompressedMemory.Size)
@@ -218,14 +218,14 @@ Function SendMemory:Long(SourceMemory:Byte Ptr, Size:Size_T, Parameters:ServeThr
 	Local Status:Int
 		
 	If Int(Size / Parameters.BytesPerCycle) = 0
-		LoggedPrint("Data size is less than " + BPC + " bytes. Sending in a single cycle.", Parameters.ThreadID)
+		LoggedPrint("Data size is less than " + BPC + " bytes. Sending in a single cycle.")
 		Status = Parameters.ClientSocket.Send(SourceMemory, Size)
 		SentBytes = Size
 	Else
-		LoggedPrint("Data size is " + Int(Size / BPC) + " times of " + BPC + " bytes. Sending in multiple cycles.", Parameters.ThreadID)
+		LoggedPrint("Data size is " + Int(Size / BPC) + " times of " + BPC + " bytes. Sending in multiple cycles.")
 		For Local i=1 To Int(Size / BPC)
 			If RunAbilityCheck(Parameters) = 0
-				LoggedPrint("Connection or timeout failure. " + (Size - SentBytes) + " bytes left not sent.", Parameters.ThreadID)
+				LoggedPrint("Connection or timeout failure. " + (Size - SentBytes) + " bytes left not sent.")
 				MemFree(Buffer)
 				Return Null
 			End If
@@ -236,12 +236,12 @@ Function SendMemory:Long(SourceMemory:Byte Ptr, Size:Size_T, Parameters:ServeThr
 		
 		If SentBytes < Size
 			If RunAbilityCheck(Parameters) = 0
-				LoggedPrint("Connection or timeout failure. " + (Size - SentBytes) + " bytes left not sent.", Parameters.ThreadID)
+				LoggedPrint("Connection or timeout failure. " + (Size - SentBytes) + " bytes left not sent.")
 				MemFree(Buffer)
 				Return Null
 			End If
 
-			LoggedPrint("Sending remaining " + (Size - SentBytes) + " bytes.", Parameters.ThreadID)
+			LoggedPrint("Sending remaining " + (Size - SentBytes) + " bytes.")
 			Status = Parameters.ClientSocket.Send(SourceMemory + SentBytes, (Size - SentBytes))
 			' Be sure to MemFree your memory after finishing
 		End If
@@ -253,6 +253,7 @@ End Function
 
 ' This function will compress the supplied memory
 ' Returns null on failure
+' TODO: Do not recieve parameters, only receive the algo string
 Function CompressMemory:MemoryVec(UncompressedMemory:Byte Ptr, Size:Size_T, Parameters:ServeThreadParameters)
 	Local CompressedMemory:Byte Ptr = MemAlloc(Size + 64 * 1024) ' File size + additional 64KB of memory
 		
@@ -262,21 +263,21 @@ Function CompressMemory:MemoryVec(UncompressedMemory:Byte Ptr, Size:Size_T, Para
 	If Parameters.EncodingMode = "gzip"
 		CompressStatus = GzipMemory(CompressedMemory, CompressedSize, UncompressedMemory, Size)
 		If CompressStatus <> 0
-			LoggedPrint("ABORTING: zlib error " + CompressStatus, Parameters.ThreadID)
+			LoggedPrint("ABORTING: zlib error " + CompressStatus)
 			MemFree(CompressedMemory)
 			Return Null
 		End If
 	ElseIf Parameters.EncodingMode = "zstd"
 		CompressStatus = ZstdMemory(CompressedMemory, CompressedSize, UncompressedMemory, Size)
 		If Not CompressStatus > 0
-			LoggedPrint("ABORTING: zstd error " + CompressStatus, Parameters.ThreadID)
+			LoggedPrint("ABORTING: zstd error " + CompressStatus)
 			MemFree(CompressedMemory)
 			Return Null
 		End If
 		CompressedSize = CompressStatus ' Zstd returns the compressed size as a status
 	End If
 	
-	LoggedPrint("Size win: " + Long(Size - CompressedSize) + " bytes (" + (100.0 - (Float(CompressedSize) / Float(Size)) * 100.0) + "% sheared off).", Parameters.ThreadID)
+	LoggedPrint("Size win: " + Long(Size - CompressedSize) + " bytes (" + (100.0 - (Float(CompressedSize) / Float(Size)) * 100.0) + "% sheared off).")
 	
 	Local Result:MemoryVec
 	
@@ -297,14 +298,14 @@ Function SendStreamToClient(SourceStream:TStream, Size:Long, Parameters:ServeThr
 	WriteLine(Parameters.ClientStream, "") ' Assuming nothing sent a CRLF CRLF to the client up to this point
 	
 	If Int(Size / Parameters.BytesPerCycle) = 0
-		LoggedPrint("File size is less than " + BPC + " bytes. Sending in a single cycle.", Parameters.ThreadID)
+		LoggedPrint("File size is less than " + BPC + " bytes. Sending in a single cycle.")
 		SourceStream.Read(Buffer, Size)
 		Status = Parameters.ClientSocket.Send(Buffer, Size)
 	Else
-		LoggedPrint("File size is " + Int(Size / BPC) + " times of " + BPC + " bytes. Sending in multiple cycles.", Parameters.ThreadID)
+		LoggedPrint("File size is " + Int(Size / BPC) + " times of " + BPC + " bytes. Sending in multiple cycles.")
 		For Local i=1 To Int(Size / BPC)		
 			If RunAbilityCheck(Parameters) = 0
-				LoggedPrint("Sending file failed. " + (Size - SentBytes) + " bytes left not sent.", Parameters.ThreadID)
+				LoggedPrint("Sending file failed. " + (Size - SentBytes) + " bytes left not sent.")
 				MemFree(Buffer)
 				Return
 			End If
@@ -314,19 +315,19 @@ Function SendStreamToClient(SourceStream:TStream, Size:Long, Parameters:ServeThr
 			Status = Parameters.ClientSocket.Send(Buffer, BPC)
 			
 			' Socket will return -1 if the send had failed. Otherwise it will return the amount of bytes sent.
-			' LoggedPrint("TSocket.Send() status: " + Status, Parameters.ThreadID)
+			' LoggedPrint("TSocket.Send() status: " + Status)
 						
 			SentBytes :+ BPC
 		Next
 		
 		If SentBytes < Size
 			If RunAbilityCheck(Parameters) = 0
-				LoggedPrint("Sending file failed. " + (Size - SentBytes) + " bytes left not sent.", Parameters.ThreadID)
+				LoggedPrint("Sending file failed. " + (Size - SentBytes) + " bytes left not sent.")
 				MemFree(Buffer)
 				Return
 			End If
 
-			LoggedPrint("Sending remaining " + (Size - SentBytes) + " bytes.", Parameters.ThreadID)
+			LoggedPrint("Sending remaining " + (Size - SentBytes) + " bytes.")
 			SourceStream.Read(Buffer, (Size - SentBytes))
 			Status = Parameters.ClientSocket.Send(Buffer, (Size - SentBytes))
 		End If
@@ -349,7 +350,7 @@ Function ReceivePayload:Byte Ptr(PayloadLength:Long, Parameters:ServeThreadParam
 			usleep(1)
 		Else
 			If (BytesStored + ReadAvail) > PayloadLength
-				LoggedPrint("WARNING: Have more bytes to receive than advertised. Capping to the advertised value.", Parameters.ThreadID)
+				LoggedPrint("WARNING: Have more bytes to receive than advertised. Capping to the advertised value.")
 				ReadAvail = PayloadLength - BytesStored
 			End If
 			BytesStored :+ Parameters.ClientStream.Read(Memory + BytesStored, ReadAvail)
@@ -360,11 +361,11 @@ Function ReceivePayload:Byte Ptr(PayloadLength:Long, Parameters:ServeThreadParam
 	Until (BytesStored = PayloadLength) Or TimedOut
 	
 	If BytesStored < PayloadLength
-		LoggedPrint("Received less bytes than advertised. Continuing anyway.", Parameters.ThreadID)
+		LoggedPrint("Received less bytes than advertised. Continuing anyway.")
 	End If
 	
 	If TimedOut
-		LoggedPrint("Timed out while waiting for the payload to go through. "+(PayloadLength - BytesStored)+" bytes not received. Continuing anyway.", Parameters.ThreadID)
+		LoggedPrint("Timed out while waiting for the payload to go through. "+(PayloadLength - BytesStored)+" bytes not received. Continuing anyway.")
 	End If
 
 	Return Memory
@@ -404,10 +405,10 @@ Function RunAbilityCheck:Int(Parameters:ServeThreadParameters, EnableTimeout:Int
 	Local InactiveTime:ULong = MilliSecs() - Parameters.ThreadLastActivityMS
 	
 	If (InactiveTime > Parameters.Timeout) And (EnableTimeout = 1)
-			LoggedPrint("Timed out.", Parameters.ThreadID)
+			LoggedPrint("Timed out.")
 			Return 0
 	ElseIf Not SocketConnected(Parameters.ClientSocket)
-			LoggedPrint("Client unexpectedly disconnected.", Parameters.ThreadID)
+			LoggedPrint("Client unexpectedly disconnected.")
 			Return 0
 	End If
 	

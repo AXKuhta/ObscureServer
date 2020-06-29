@@ -110,12 +110,12 @@ Function ProcessHTTPRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 	End If
 		
 	If Instr(ParsedRequest.Target, "?")
-		LoggedPrint("WARNING: Request queries (link?key=value) are not supported. Cutting the query out.", Parameters.ThreadID)
-		LoggedPrint("TODO: Handle queries in a better way.", Parameters.ThreadID)
+		LoggedPrint("WARNING: Request queries (link?key=value) are not supported. Cutting the query out.")
+		LoggedPrint("TODO: Handle queries in a better way.")
 		ParsedRequest.Target = Left(ParsedRequest.Target, ParsedRequest.Target.Find("?"))
 	End If
 	
-	LoggedPrint("Request: " + ParsedRequest.Action + " " + ParsedRequest.Target + " " + ParsedRequest.Version, Parameters.ThreadID)
+	LoggedPrint("Request: " + ParsedRequest.Action + " " + ParsedRequest.Target + " " + ParsedRequest.Version)
 	
 	If ParsedRequest.Action = "GET"
 		ProcessDownloadRequest(ParsedRequest, Parameters)
@@ -177,7 +177,7 @@ Function ProcessDownloadRequest(ParsedRequest:HTTPRequestStruct, Parameters:Serv
 			
 		Default
 			SendError(500, Parameters)
-			LoggedPrint("(An error occured)", Parameters.ThreadID)
+			LoggedPrint("(An error occured)")
 			Return
 	End Select
 	
@@ -190,10 +190,10 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	Local TargetDir:String = ExtractDir(ParsedRequest.Target)
 	Local Status:Int
 
-	LoggedPrint("Incoming file. Name: "+ParsedRequest.Target+"; Size: "+(ParsedRequest.PayloadLength / 1024)+"KB.", Parameters.ThreadID)
+	LoggedPrint("Incoming file. Name: "+ParsedRequest.Target+"; Size: "+(ParsedRequest.PayloadLength / 1024)+"KB.")
 	
 	If Not Parameters.UploadsAllowed
-		LoggedPrint("Got a file upload, but that's not allowed. No changes to filesystem made.", Parameters.ThreadID)
+		LoggedPrint("Got a file upload, but that's not allowed. No changes to filesystem made.")
 		SendError(405, Parameters)
 		Return
 	End If
@@ -202,7 +202,7 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		' If there's a targer dir...
 		' ...check that it exists and is not a file 
 		If FileType(TargetDir) <> 2
-			LoggedPrint("Got an attempt to upload a file into a non-existing directory ["+TargetDir+"]", Parameters.ThreadID)
+			LoggedPrint("Got an attempt to upload a file into a non-existing directory ["+TargetDir+"]")
 			SendError(404, Parameters, "Directory ["+TargetDir+"] doesn't exist.")
 			Return
 		End If
@@ -211,7 +211,7 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	If TargetType = 1
 		TargetSize = FileSize(ParsedRequest.Target)
 	ElseIf TargetType = 2
-		LoggedPrint("["+ParsedRequest.Target+"] Is a directory!", Parameters.ThreadID)
+		LoggedPrint("["+ParsedRequest.Target+"] Is a directory!")
 		SendError(406, Parameters, "Target is a directory! You can't do *that*!")
 		Return
 	End If
@@ -222,7 +222,7 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		' And if this is a POST and the file doesn't exist yet, we must create it
 		ResponseCode = 204
 		
-		LoggedPrint("Creating ["+ParsedRequest.Target+"]", Parameters.ThreadID)
+		LoggedPrint("Creating ["+ParsedRequest.Target+"]")
 		Status = ReceiveFile(ParsedRequest.Target, ParsedRequest.Payload, ParsedRequest.PayloadLength)
 	Else
 		' If it's a POST and the file does exist, we must update it
@@ -230,19 +230,19 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		
 		If (TargetSize + ParsedRequest.PayloadLength) > Parameters.FilesizeAfterUpdateLimit
 			' If this POST request would bring the target file size over the limit, refuse to do it
-			LoggedPrint("This POST would bring the file size over the limit!", Parameters.ThreadID)
+			LoggedPrint("This POST would bring the file size over the limit!")
 			SendError(406, Parameters, "File is too large.")
 			Return
 		End If
 		
-		LoggedPrint("Updating ["+ParsedRequest.Target+"]", Parameters.ThreadID)
+		LoggedPrint("Updating ["+ParsedRequest.Target+"]")
 		Status = UpdateFile(ParsedRequest.Target, ParsedRequest.Payload, ParsedRequest.PayloadLength)
 	End If
 	
 	If Status <> 0
 		SendSuccess(ResponseCode, Parameters)
 	Else
-		LoggedPrint("Failed to create or update ["+ParsedRequest.Target+"]!", Parameters.ThreadID)
+		LoggedPrint("Failed to create or update ["+ParsedRequest.Target+"]!")
 		SendError(500, Parameters, "Failed to create or update the file.")
 	End If
 End Function
@@ -304,7 +304,7 @@ Function ProcessMoveRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 	End Select
 	
 	If (StatusCopy = 0) Or (StatusDelete = 0)
-		LoggedPrint("Failed to move ["+ParsedRequest.Target+"] -> ["+ParsedRequest.Destination+"]!", Parameters.ThreadID)
+		LoggedPrint("Failed to move ["+ParsedRequest.Target+"] -> ["+ParsedRequest.Destination+"]!")
 		SendError(500, Parameters, "Failed to move ["+ParsedRequest.Target+"] -> ["+ParsedRequest.Destination+"]")
 	End If
 
@@ -400,13 +400,13 @@ Function DecideDownloadMode(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 	Local Ranged:Int = (ParsedRequest.RangeStart Or ParsedRequest.RangeStop)
 	
 	If (Parameters.RangesAllowed = 0) And Ranged
-		LoggedPrint("Got a ranged request but ranges are disabled.", Parameters.ThreadID)
+		LoggedPrint("Got a ranged request but ranges are disabled.")
 		SendError(416, Parameters)
 		Return 0
 	End If
 	
 	If ParsedRequest.RangeStart > Size
-		LoggedPrint("Request has a malformed range (Start > Size).", Parameters.ThreadID)
+		LoggedPrint("Request has a malformed range (Start > Size).")
 		SendError(416, Parameters)
 		Return 0
 	End If
@@ -460,7 +460,7 @@ End Function
 ' In a scope of a single request this function will send a final error
 ' The client usually disconnects after that
 Function SendError(ErrorCode:Int, Parameters:ServeThreadParameters, ErrorText:String = "")
-	LoggedPrint(ErrorCode + "'d.", Parameters.ThreadID)
+	LoggedPrint(ErrorCode + "'d.")
 	
 	Local StatusText:String
 	

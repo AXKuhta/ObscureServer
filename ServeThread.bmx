@@ -9,9 +9,9 @@ Function ServeThread:Object(ParametersObject:Object)
 	Local ThreadStartupMS:ULong = MilliSecs()
 	Local ThreadStartupuS:ULong = microseconds()
 	
-	LoggedPrint(" = = = New client = = = ", Parameters.ThreadID)
+	LoggedPrint(" = = = New client = = = ")
 	
-	PrintClientIP(Parameters.ClientSocket, Parameters.ThreadID, Parameters.EnableHostnameLookup)
+	PrintClientIP(Parameters.ClientSocket, Parameters.EnableHostnameLookup)
 		
 	Parameters.ThreadStartupMS = ThreadStartupMS
 	Parameters.ThreadLastActivityMS = ThreadStartupMS
@@ -19,7 +19,7 @@ Function ServeThread:Object(ParametersObject:Object)
 	Parameters.ClientStream:TStream = CreateSocketStream(Parameters.ClientSocket)
 	
 	If Not Parameters.ClientStream
-		LoggedPrint("ABORTING: failed to create client stream.", Parameters.ThreadID)
+		LoggedPrint("ABORTING: failed to create client stream.")
 		Return
 	End If
 	
@@ -28,13 +28,14 @@ Function ServeThread:Object(ParametersObject:Object)
 	
 	CloseConnection(Parameters)
 		
-	LoggedPrint("Finished. Ran for " + (microseconds() - ThreadStartupuS) + " uSec. / " + ((microseconds() - ThreadStartupuS) / 1000000.0) + " Sec.", Parameters.ThreadID)
-	LoggedPrint(" = = = = = = = = = = = =", Parameters.ThreadID)
+	LoggedPrint("Finished. Ran for " + (microseconds() - ThreadStartupuS) + " uSec. / " + ((microseconds() - ThreadStartupuS) / 1000000.0) + " Sec.")
+	LoggedPrint(" = = = = = = = = = = = =")
+	
+	Return
 End Function
 
 
 Function WaitRequests(Parameters:ServeThreadParameters)
-	Local ThreadID:ULong = Parameters.ThreadID
 	Local ClientSocket:TSocket = Parameters.ClientSocket
 	Local ClientStream:TStream = Parameters.ClientStream
 	Local ParsedRequest:HTTPRequestStruct
@@ -44,7 +45,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 	Local i:Int
 
 	Repeat
-		LoggedPrint("Waiting for request.", ThreadID)
+		LoggedPrint("Waiting for request.")
 		
 		Repeat
 			If RunAbilityCheck(Parameters, 1) = 0 Then Return
@@ -52,7 +53,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 			usleep(200) ' Take a 200 microsecond nap
 		Forever
 		
-		LoggedPrint("Got request.", ThreadID)
+		LoggedPrint("Got request.")
 		Parameters.ThreadLastActivityMS = MilliSecs()
 		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
@@ -69,7 +70,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		ParsedRequest = ParseRequest(ReadLine(ClientStream))
 		
 		If Not ParsedRequest
-			LoggedPrint("ABORTING: Failed to parse request. Probably not HTTP.", ThreadID)
+			LoggedPrint("ABORTING: Failed to parse request. Probably not HTTP.")
 			Return
 		End If
 		
@@ -79,7 +80,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 			Headers[i] = ReadLine(ClientStream)
 			
 			'If Len(Headers[i]) > 2048
-			'	LoggedPrint("ABORTING: Header line too long.", ThreadID)
+			'	LoggedPrint("ABORTING: Header line too long.")
 			'	Return
 			'End If
 			
@@ -89,7 +90,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 					
 				Case "content-length"
 					PayloadLength = Long(ExtractHeaderFlags(Headers[i])[0])
-					LoggedPrint("Got a hint for payload length: " + PayloadLength, ThreadID)
+					LoggedPrint("Got a hint for payload length: " + PayloadLength)
 
 				Case "accept-encoding"
 					If IsInArray("gzip", ExtractHeaderFlags(Headers[i])) Then Parameters.EncodingMode = "gzip"
@@ -97,22 +98,22 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 					
 				Case "destination"
 					ParsedRequest.Destination = ParseDestination(ExtractHeaderFlags(Headers[i])[0])
-					LoggedPrint("Got destination: " + ParsedRequest.Destination, ThreadID)
+					LoggedPrint("Got destination: " + ParsedRequest.Destination)
 				
 				Case "expect"
 					If IsInArray("100-continue", ExtractHeaderFlags(Headers[i])) Then Parameters.ExpectsContinue = 1
-					LoggedPrint("Got a hint for expected response: " + ExtractHeaderFlags(Headers[i])[0] + ".", ThreadID)
+					LoggedPrint("Got a hint for expected response: " + ExtractHeaderFlags(Headers[i])[0] + ".")
 					
 				Case "range"
 					ParsedRequest.RangeStart = ExtractRanges(Headers[i])[0]
 					ParsedRequest.RangeStop = ExtractRanges(Headers[i])[1]
-					LoggedPrint("Got ranges: " + ParsedRequest.RangeStart + "-" + ParsedRequest.RangeStop, ThreadID)
+					LoggedPrint("Got ranges: " + ParsedRequest.RangeStart + "-" + ParsedRequest.RangeStop)
 				
 				
 				Default
 					' If something doesn't work, uncomment this
 					' Perhaps there's some problem with case sensetivity happening
-					' LoggedPrint("Unknown header: " + Header[i], ThreadID)
+					' LoggedPrint("Unknown header: " + Header[i])
 			End Select
 						
 			i :+ 1
@@ -120,25 +121,25 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		
 		
 		If IsInArray("keep-alive", Parameters.ConnectionFlags) And (Parameters.KeepAliveAllowed = 1)
-			LoggedPrint("Keep-alive mode enabled.", ThreadID)
+			LoggedPrint("Keep-alive mode enabled.")
 			Parameters.KeepAliveEnabled = 1
 		End If
 		
 		If IsInArray("te", Parameters.ConnectionFlags)
-			LoggedPrint("Clients wants Transfer-Mode header. Ignoring it.", ThreadID)
+			LoggedPrint("Clients wants Transfer-Mode header. Ignoring it.")
 		End If
 		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 		
 		If (SocketReadAvail(ClientSocket) > 0) And (PayloadLength = 0)
-			LoggedPrint("There's "+SocketReadAvail(ClientSocket)+" bytes of payload within the request but no Content-Length header.", ThreadID)
+			LoggedPrint("There's "+SocketReadAvail(ClientSocket)+" bytes of payload within the request but no Content-Length header.")
 			PayloadLength = SocketReadAvail(ClientSocket) ' We'll set the length ourselves if that happened
 		End If
 		
 		If PayloadLength > Parameters.RequestPayloadLengthLimit
 			' This situation can occur if a client tried to upload a file that's too big
 			' We'll tell them that there's a problem and bail
-			LoggedPrint("Request payload is over the limit: " + PayloadLength + " bytes vs " + Parameters.RequestPayloadLengthLimit + " bytes. Aborting.", ThreadID)
+			LoggedPrint("Request payload is over the limit: " + PayloadLength + " bytes vs " + Parameters.RequestPayloadLengthLimit + " bytes. Aborting.")
 			SendError(413, Parameters) 
 			Return
 		End If
@@ -160,7 +161,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		ParsedRequest.Target = URLDecode(ParsedRequest.Target) ' Turns "%20" into spaces
 		
 		If (ParsedRequest.Target.Contains("//") Or ParsedRequest.Target.Contains(".."))
-			LoggedPrint("ABORTING: Suspicious request target.", Parameters.ThreadID)
+			LoggedPrint("ABORTING: Suspicious request target.")
 			Return
 		End If
 				
