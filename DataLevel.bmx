@@ -255,8 +255,7 @@ End Function
 ' Returns null on failure
 Function CompressMemory:MemoryVec(UncompressedMemory:Byte Ptr, Size:Size_T, Parameters:ServeThreadParameters)
 	Local CompressedMemory:Byte Ptr = MemAlloc(Size + 64 * 1024) ' File size + additional 64KB of memory
-	Local ClientStream:TStream = Parameters.ClientStream
-	
+		
 	Local CompressedSize:UInt = Size + 64 * 1024
 	Local CompressStatus:Int
 	
@@ -274,10 +273,10 @@ Function CompressMemory:MemoryVec(UncompressedMemory:Byte Ptr, Size:Size_T, Para
 			MemFree(CompressedMemory)
 			Return Null
 		End If
-		CompressedSize = CompressStatus ' Zstd (Or at least my version of it) returns the compressed size as a status
+		CompressedSize = CompressStatus ' Zstd returns the compressed size as a status
 	End If
 	
-	LoggedPrint("Size win: " + (Size - Int(CompressedSize)) + " bytes (" + (100.0 - (Float(CompressedSize) / Float(Size)) * 100.0) + "% sheared off).", Parameters.ThreadID)
+	LoggedPrint("Size win: " + Long(Size - CompressedSize) + " bytes (" + (100.0 - (Float(CompressedSize) / Float(Size)) * 100.0) + "% sheared off).", Parameters.ThreadID)
 	
 	Local Result:MemoryVec
 	
