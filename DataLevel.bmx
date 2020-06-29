@@ -90,7 +90,7 @@ Function SendCompressedFile(Filename:String, Parameters:ServeThreadParameters)
 	
 	Local CompressedMemory:MemoryVec
 	
-	CompressedMemory = CompressMemory(UncompressedMemory, Size, Parameters)
+	CompressedMemory = CompressMemory(UncompressedMemory, Size, Parameters.EncodingMode)
 		
 	If CompressedMemory.Pointer
 		WriteLine(ClientStream, "Content-Encoding: " + Parameters.EncodingMode)
@@ -159,7 +159,7 @@ Function SendCompressedFileSlice(Filename:String, Start:Long, Stop:Long, Paramet
 	
 	WriteLine(Parameters.ClientStream, "Content-Range: bytes " + Start + "-" + Stop + "/" + FileSize(Filename))
 	
-	CompressedMemory = CompressMemory(UncompressedMemory, Size, Parameters)
+	CompressedMemory = CompressMemory(UncompressedMemory, Size, Parameters.EncodingMode)
 	
 	If CompressedMemory.Pointer
 		WriteLine(ClientStream, "Content-Encoding: " + Parameters.EncodingMode)
@@ -189,7 +189,7 @@ Function SendText(PayloadText:String, Parameters:ServeThreadParameters)
 	If (TextLength > 256) And (TextLength < Parameters.CompressionSizeLimit) And (Parameters.EncodingMode <> "")
 		LoggedPrint("Compressing text ("+Parameters.EncodingMode+").")
 				
-		CompressedMemory = CompressMemory(UTF8Text, TextLength, Parameters)
+		CompressedMemory = CompressMemory(UTF8Text, TextLength, Parameters.EncodingMode)
 		
 		If CompressedMemory.Pointer
 			WriteLine(ClientStream, "Content-Encoding: " + Parameters.EncodingMode)
@@ -253,21 +253,20 @@ End Function
 
 ' This function will compress the supplied memory
 ' Returns null on failure
-' TODO: Do not recieve parameters, only receive the algo string
-Function CompressMemory:MemoryVec(UncompressedMemory:Byte Ptr, Size:Size_T, Parameters:ServeThreadParameters)
+Function CompressMemory:MemoryVec(UncompressedMemory:Byte Ptr, Size:Size_T, Algorithm:String)
 	Local CompressedMemory:Byte Ptr = MemAlloc(Size + 64 * 1024) ' File size + additional 64KB of memory
 		
 	Local CompressedSize:UInt = Size + 64 * 1024
 	Local CompressStatus:Int
 	
-	If Parameters.EncodingMode = "gzip"
+	If Algorithm = "gzip"
 		CompressStatus = GzipMemory(CompressedMemory, CompressedSize, UncompressedMemory, Size)
 		If CompressStatus <> 0
 			LoggedPrint("ABORTING: zlib error " + CompressStatus)
 			MemFree(CompressedMemory)
 			Return Null
 		End If
-	ElseIf Parameters.EncodingMode = "zstd"
+	ElseIf Algorithm = "zstd"
 		CompressStatus = ZstdMemory(CompressedMemory, CompressedSize, UncompressedMemory, Size)
 		If Not CompressStatus > 0
 			LoggedPrint("ABORTING: zstd error " + CompressStatus)
@@ -275,6 +274,9 @@ Function CompressMemory:MemoryVec(UncompressedMemory:Byte Ptr, Size:Size_T, Para
 			Return Null
 		End If
 		CompressedSize = CompressStatus ' Zstd returns the compressed size as a status
+	Else
+		LoggedPrint("ABORTING: unknown algo: " + Algorithm)
+		Return Null
 	End If
 	
 	LoggedPrint("Size win: " + Long(Size - CompressedSize) + " bytes (" + (100.0 - (Float(CompressedSize) / Float(Size)) * 100.0) + "% sheared off).")
