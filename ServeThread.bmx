@@ -48,7 +48,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		LoggedPrint("Waiting for request.")
 		
 		Repeat
-			If RunAbilityCheck(Parameters, 1) = 0 Then Return
+			If RunAbilityCheck(1) = 0 Then Return
 			If SocketReadAvail(ClientSocket) > 0 Then Exit
 			usleep(200) ' Take a 200 microsecond nap
 		Forever
@@ -75,7 +75,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		End If
 		
 		Repeat
-			If RunAbilityCheck(Parameters) = 0 Then Return
+			If RunAbilityCheck() = 0 Then Return
 			Headers = Headers[..i + 1]
 			Headers[i] = ReadLine(ClientStream)
 			
@@ -182,7 +182,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-	Until ((Parameters.KeepAliveEnabled = 0) Or (RunAbilityCheck(Parameters) = 0))
+	Until ((Parameters.KeepAliveEnabled = 0) Or (RunAbilityCheck() = 0))
 End Function
 
 

@@ -63,7 +63,8 @@ Function ProcessWebDAVRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 			
 	End Select
 		
-	If RunAbilityCheck(Parameters) = 0 Then Return
+	If RunAbilityCheck() = 0 Then Return
+	
 	WriteLine(Parameters.ClientStream, "HTTP/1.1 207 Multi-status")
 	WriteLine(Parameters.ClientStream, "Content-type: text/xml; charset=~qutf-8~q")
 	WriteHeaders(Parameters)

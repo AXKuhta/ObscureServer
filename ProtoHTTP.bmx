@@ -151,7 +151,7 @@ Function ProcessDownloadRequest(ParsedRequest:HTTPRequestStruct, Parameters:Serv
 	
 	DownloadMode = DecideDownloadMode(ParsedRequest, Parameters)
 	
-	If RunAbilityCheck(Parameters) = 0 Then Return
+	If RunAbilityCheck() = 0 Then Return
 	
 	Select DownloadMode
 		Case 1 ' Uncompressed
@@ -341,7 +341,7 @@ Function ProcessHEADRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 	' Then decide whether it will be compressed or not
 	DownloadMode = DecideDownloadMode(ParsedRequest, Parameters)
 	' And (after a check) start giving the data back
-	If RunAbilityCheck(Parameters) = 0 Then Return
+	If RunAbilityCheck() = 0 Then Return
 	
 	Select DownloadMode
 		Case 1 ' Uncompressed and not a slice
@@ -453,7 +453,7 @@ Function SendStatus(StatusCode:Int)
 			StatusText = ""
 	End Select
 	
-	If RunAbilityCheck(Parameters) = 0 Then Return
+	If RunAbilityCheck() = 0 Then Return
 	WriteLine(Parameters.ClientStream, "HTTP/1.1 " + StatusCode + " " + StatusText)
 	WriteLine(Parameters.ClientStream, "")
 End Function
@@ -484,7 +484,7 @@ Function SendError(ErrorCode:Int, ErrorText:String = "")
 			StatusText = ""				
 	End Select
 	
-	If RunAbilityCheck(Parameters) = 0 Then Return
+	If RunAbilityCheck() = 0 Then Return
 	WriteLine(Parameters.ClientStream, "HTTP/1.1 " + ErrorCode + " " + StatusText)
 	If ErrorCode = 405 Then WriteLine(Parameters.ClientStream, GetAllowedMethods(Parameters)) ' Spec says we must do that on 405s
 	WriteHeaders(Parameters)
@@ -515,7 +515,7 @@ Function SendSuccess(SuccessCode:Int, AdditionalText:String = "", OptionsRespons
 			StatusText = ""
 	End Select
 	
-	If RunAbilityCheck(Parameters) = 0 Then Return
+	If RunAbilityCheck() = 0 Then Return
 	WriteLine(Parameters.ClientStream, "HTTP/1.1 " + SuccessCode + " " + StatusText)
 	
 	' This is a hacky special case for when this function is used to reply to OPTIONS
