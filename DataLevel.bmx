@@ -224,7 +224,7 @@ Function SendMemory:Long(SourceMemory:Byte Ptr, Size:Size_T, Parameters:ServeThr
 	Else
 		LoggedPrint("Data size is " + Int(Size / BPC) + " times of " + BPC + " bytes. Sending in multiple cycles.")
 		For Local i=1 To Int(Size / BPC)
-			If RunAbilityCheck() = 0
+			If RunAbilityCheck(Parameters) = 0
 				LoggedPrint("Connection or timeout failure. " + (Size - SentBytes) + " bytes left not sent.")
 				MemFree(Buffer)
 				Return Null
@@ -235,7 +235,7 @@ Function SendMemory:Long(SourceMemory:Byte Ptr, Size:Size_T, Parameters:ServeThr
 		Next
 		
 		If SentBytes < Size
-			If RunAbilityCheck() = 0
+			If RunAbilityCheck(Parameters) = 0
 				LoggedPrint("Connection or timeout failure. " + (Size - SentBytes) + " bytes left not sent.")
 				MemFree(Buffer)
 				Return Null
@@ -306,7 +306,7 @@ Function SendStreamToClient(SourceStream:TStream, Size:Long, Parameters:ServeThr
 	Else
 		LoggedPrint("File size is " + Int(Size / BPC) + " times of " + BPC + " bytes. Sending in multiple cycles.")
 		For Local i=1 To Int(Size / BPC)		
-			If RunAbilityCheck() = 0
+			If RunAbilityCheck(Parameters) = 0
 				LoggedPrint("Sending file failed. " + (Size - SentBytes) + " bytes left not sent.")
 				MemFree(Buffer)
 				Return
@@ -323,7 +323,7 @@ Function SendStreamToClient(SourceStream:TStream, Size:Long, Parameters:ServeThr
 		Next
 		
 		If SentBytes < Size
-			If RunAbilityCheck() = 0
+			If RunAbilityCheck(Parameters) = 0
 				LoggedPrint("Sending file failed. " + (Size - SentBytes) + " bytes left not sent.")
 				MemFree(Buffer)
 				Return
@@ -403,10 +403,7 @@ Function UpdateFile(Filename:String, Data:Byte Ptr, DataLength:Long)
 	Return 1
 End Function
 
-' This function checks whether the connection is still open
-' Optionally, it can be set to fail if the thread timed out
-Function RunAbilityCheck:Int(EnableTimeout:Int = 0)
-	Local Parameters:ServeThreadParameters = GetParameters()
+Function RunAbilityCheck:Int(Parameters:ServeThreadParameters, EnableTimeout:Int = 0)
 	Local InactiveTime:ULong = MilliSecs() - Parameters.ThreadLastActivityMS
 	
 	If (InactiveTime > Parameters.Timeout) And (EnableTimeout = 1)

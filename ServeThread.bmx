@@ -48,7 +48,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		LoggedPrint("Waiting for request.")
 		
 		Repeat
-			If RunAbilityCheck(1) = 0 Then Return
+			If RunAbilityCheck(Parameters, 1) = 0 Then Return
 			If SocketReadAvail(ClientSocket) > 0 Then Exit
 			usleep(200) ' Take a 200 microsecond nap
 		Forever
@@ -75,7 +75,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		End If
 		
 		Repeat
-			If RunAbilityCheck() = 0 Then Return
+			If RunAbilityCheck(Parameters) = 0 Then Return
 			Headers = Headers[..i + 1]
 			Headers[i] = ReadLine(ClientStream)
 			
@@ -140,7 +140,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 			' This situation can occur if a client tried to upload a file that's too big
 			' We'll tell them that there's a problem and bail
 			LoggedPrint("Request payload is over the limit: " + PayloadLength + " bytes vs " + Parameters.RequestPayloadLengthLimit + " bytes. Aborting.")
-			SendError(413) 
+			SendError(413, Parameters) 
 			Return
 		End If
 		
@@ -148,7 +148,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 			' If we are needed to, say that everything is looking good
 			' CarotDAV uses 100-Continue during file uploads, though it will still work fine even if
 			' you remove this code block completely
-			SendStatus(100) 
+			SendStatus(100, Parameters) 
 		End If
 			
 		If PayloadLength > 0
@@ -173,7 +173,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 				ProcessWebDAVRequest(ParsedRequest, Parameters)
 								
 			Default ' 405 Method not supported
-				SendError(405)
+				SendError(405, Parameters)
 								
 		End Select
 		
@@ -182,7 +182,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-	Until ((Parameters.KeepAliveEnabled = 0) Or (RunAbilityCheck() = 0))
+	Until ((Parameters.KeepAliveEnabled = 0) Or (RunAbilityCheck(Parameters) = 0))
 End Function
 
 

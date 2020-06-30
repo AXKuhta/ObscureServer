@@ -19,7 +19,7 @@ Function ProcessWebDAVRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	
 	If Not Parameters.WebDAVAllowed
 		LoggedPrint("But WebDAV is disabled. Responding with 405.")
-		SendError(405)
+		SendError(405, Parameters)
 		Return
 	End If
 	
@@ -52,7 +52,7 @@ Function ProcessWebDAVRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	Select FileType(TargetPath)
 		Case 0 ' Does not exist or no permission to read or corrupted on disk
 			LoggedPrint("404'd during a WebDAV request: " + TargetPath + " not found.")
-			SendError(404, "Error 404. File ["+ TargetPath +"] was not found.")		
+			SendError(404, Parameters, "Error 404. File ["+ TargetPath +"] was not found.")		
 			Return
 
 		Case 1 ' This is a file. Build a stat for it.
@@ -63,8 +63,7 @@ Function ProcessWebDAVRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 			
 	End Select
 		
-	If RunAbilityCheck() = 0 Then Return
-	
+	If RunAbilityCheck(Parameters) = 0 Then Return
 	WriteLine(Parameters.ClientStream, "HTTP/1.1 207 Multi-status")
 	WriteLine(Parameters.ClientStream, "Content-type: text/xml; charset=~qutf-8~q")
 	WriteHeaders(Parameters)
