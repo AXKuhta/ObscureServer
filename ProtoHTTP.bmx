@@ -133,7 +133,7 @@ Function ProcessHTTPRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 		ProcessHEADRequest(ParsedRequest, Parameters)
 			
 	ElseIf ParsedRequest.Action = "OPTIONS"
-		SendSuccess(200, Parameters, "", 1)
+		SendSuccess(200, "", 1)
 							
 	End If
 
@@ -145,7 +145,7 @@ Function ProcessDownloadRequest(ParsedRequest:HTTPRequestStruct, Parameters:Serv
 	
 	' Check if the file exists first
 	If FileType(ParsedRequest.Target) <> 1
-		SendError(404, Parameters, "Error 404. File ["+ParsedRequest.Target+"] was not found.")
+		SendError(404, "Error 404. File ["+ParsedRequest.Target+"] was not found.")
 		Return
 	End If
 	
@@ -176,7 +176,7 @@ Function ProcessDownloadRequest(ParsedRequest:HTTPRequestStruct, Parameters:Serv
 						
 			
 		Default
-			SendError(500, Parameters)
+			SendError(500)
 			LoggedPrint("(An error occured)")
 			Return
 	End Select
@@ -194,7 +194,7 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	
 	If Not Parameters.UploadsAllowed
 		LoggedPrint("Got a file upload, but that's not allowed. No changes to filesystem made.")
-		SendError(405, Parameters)
+		SendError(405)
 		Return
 	End If
 	
@@ -203,7 +203,7 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		' ...check that it exists and is not a file 
 		If FileType(TargetDir) <> 2
 			LoggedPrint("Got an attempt to upload a file into a non-existing directory ["+TargetDir+"]")
-			SendError(404, Parameters, "Directory ["+TargetDir+"] doesn't exist.")
+			SendError(404, "Directory ["+TargetDir+"] doesn't exist.")
 			Return
 		End If
 	End If
@@ -212,7 +212,7 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		TargetSize = FileSize(ParsedRequest.Target)
 	ElseIf TargetType = 2
 		LoggedPrint("["+ParsedRequest.Target+"] Is a directory!")
-		SendError(406, Parameters, "Target is a directory! You can't do *that*!")
+		SendError(406, "Target is a directory! You can't do *that*!")
 		Return
 	End If
 	
@@ -231,7 +231,7 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		If (TargetSize + ParsedRequest.PayloadLength) > Parameters.FilesizeAfterUpdateLimit
 			' If this POST request would bring the target file size over the limit, refuse to do it
 			LoggedPrint("This POST would bring the file size over the limit!")
-			SendError(406, Parameters, "File is too large.")
+			SendError(406, "File is too large.")
 			Return
 		End If
 		
@@ -240,10 +240,10 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	End If
 	
 	If Status <> 0
-		SendSuccess(ResponseCode, Parameters)
+		SendSuccess(ResponseCode)
 	Else
 		LoggedPrint("Failed to create or update ["+ParsedRequest.Target+"]!")
-		SendError(500, Parameters, "Failed to create or update the file.")
+		SendError(500, "Failed to create or update the file.")
 	End If
 End Function
 
@@ -252,21 +252,21 @@ Function ProcessDeleteRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	Local Status:Int
 	
 	If Parameters.DeletesAllowed = 0
-		SendError(405, Parameters)
+		SendError(405)
 		Return
 	End If
 	
 	If FileType(ParsedRequest.Target) <> 1
-		SendError(404, Parameters, "Error 404 on deletion. File ["+ParsedRequest.Target+"] was not found.")
+		SendError(404, "Error 404 on deletion. File ["+ParsedRequest.Target+"] was not found.")
 		Return
 	End If
 	
 	Status = DeleteFile(ParsedRequest.Target)
 	
 	If Status
-		SendSuccess(200, Parameters)
+		SendSuccess(200)
 	Else
-		SendError(500, Parameters, "Failed to delete ["+ParsedRequest.Target+"]")
+		SendError(500, "Failed to delete ["+ParsedRequest.Target+"]")
 	End If
 End Function
 
@@ -275,18 +275,18 @@ Function ProcessMoveRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 	Local StatusDelete:Int
 	
 	If Parameters.MovesAllowed = 0
-		SendError(405, Parameters)
+		SendError(405)
 		Return
 	End If
 	
 	If ParsedRequest.Target = ParsedRequest.Destination
-		SendError(403, Parameters)
+		SendError(403)
 		Return
 	End If
 	
 	Select FileType(ParsedRequest.Target)
 		Case 0
-			SendError(404, Parameters)
+			SendError(404)
 			Return
 			
 		Case 1
@@ -305,10 +305,10 @@ Function ProcessMoveRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 	
 	If (StatusCopy = 0) Or (StatusDelete = 0)
 		LoggedPrint("Failed to move ["+ParsedRequest.Target+"] -> ["+ParsedRequest.Destination+"]!")
-		SendError(500, Parameters, "Failed to move ["+ParsedRequest.Target+"] -> ["+ParsedRequest.Destination+"]")
+		SendError(500, "Failed to move ["+ParsedRequest.Target+"] -> ["+ParsedRequest.Destination+"]")
 	End If
 
-	SendSuccess(200, Parameters)
+	SendSuccess(200)
 End Function
 
 Function ProcessHEADRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThreadParameters)
@@ -321,7 +321,7 @@ Function ProcessHEADRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 	' First of all, we should check whether the target exists
 	If FileType(ParsedRequest.Target) <> 1
 		' That's a HEAD, so no text payload is allowed on error
-		SendError(404, Parameters)
+		SendError(404)
 		Return
 	End If
 	
@@ -401,13 +401,13 @@ Function DecideDownloadMode(ParsedRequest:HTTPRequestStruct, Parameters:ServeThr
 	
 	If (Parameters.RangesAllowed = 0) And Ranged
 		LoggedPrint("Got a ranged request but ranges are disabled.")
-		SendError(416, Parameters)
+		SendError(416)
 		Return 0
 	End If
 	
 	If ParsedRequest.RangeStart > Size
 		LoggedPrint("Request has a malformed range (Start > Size).")
-		SendError(416, Parameters)
+		SendError(416)
 		Return 0
 	End If
 		
@@ -441,7 +441,8 @@ End Function
 
 ' This function will send a status, like 100 Continue
 ' The clien't shouldn't disconnect after that
-Function SendStatus(StatusCode:Int, Parameters:ServeThreadParameters)
+Function SendStatus(StatusCode:Int)
+	Local Parameters:ServeThreadParameters = GetParameters()
 	Local StatusText:String
 	
 	Select StatusCode
@@ -459,10 +460,11 @@ End Function
 
 ' In a scope of a single request this function will send a final error
 ' The client usually disconnects after that
-Function SendError(ErrorCode:Int, Parameters:ServeThreadParameters, ErrorText:String = "")
-	LoggedPrint(ErrorCode + "'d.")
-	
+Function SendError(ErrorCode:Int, ErrorText:String = "")
+	Local Parameters:ServeThreadParameters = GetParameters()
 	Local StatusText:String
+	
+	LoggedPrint(ErrorCode + "'d.")
 	
 	Select ErrorCode
 		Case 404
@@ -499,7 +501,8 @@ End Function
 
 ' In a scope of a single request this function will send a final OK status
 ' If the connection is keep-alive, the client shouldn't disconnect after that and could send another request
-Function SendSuccess(SuccessCode:Int, Parameters:ServeThreadParameters, AdditionalText:String = "", OptionsResponse:Int = 0)
+Function SendSuccess(SuccessCode:Int, AdditionalText:String = "", OptionsResponse:Int = 0)
+	Local Parameters:ServeThreadParameters = GetParameters()
 	Local StatusText:String
 	
 	Select SuccessCode
