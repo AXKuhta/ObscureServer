@@ -29,3 +29,11 @@ Type ServeThreadParameters
 	Field RangesAllowed:Int
 	Field EnableEncZNFS:Int
 End Type
+
+' This function will fetch the ServeThreadParameters of the caller thread
+'
+' It does affect performance because it leads to typecasting (2 times vs 0 times as before)
+' But whatever, it's not a number cruncher, it's a web server that probably spends most of its time waiting for network anyway
+Function GetParameters:ServeThreadParameters()
+	Return ServeThreadParameters(CurrentThread()._data)
+End Function
