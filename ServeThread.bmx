@@ -6,6 +6,9 @@ Import "ProtoWebDAV.bmx"
 
 Function ServeThread:Object(ParametersObject:Object)
 	Local Parameters:ServeThreadParameters = ServeThreadParameters(ParametersObject)
+	
+	set_thread_parameters(Parameters)
+	
 	Local ThreadStartupMS:ULong = MilliSecs()
 	Local ThreadStartupuS:ULong = microseconds()
 	

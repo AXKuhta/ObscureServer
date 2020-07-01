@@ -13,8 +13,7 @@ End Extern
 
 
 Function LoggedPrint(ToPrint:String)
-	' You can fetch the data of the current thread by using the (undocumented) _data field of TThread
-	Local ThreadID:ULong = ServeThreadParameters(CurrentThread()._data).ThreadID
+	Local ThreadID:ULong = get_thread_parameters().ThreadID
 
 	Print "[" + CurrentDate() + " " + CurrentTime() + "][ThreadID: " + ThreadID + "] " + ToPrint
 End Function

@@ -1,5 +1,11 @@
 Import BRL.Socket
 Import BRL.SocketStream
+Import "thread_local_storage.c"
+
+Extern
+	Function set_thread_parameters(parameters:ServeThreadParameters)
+	Function get_thread_parameters:ServeThreadParameters()
+End Extern
 
 Type ServeThreadParameters
 	Field ClientSocket:TSocket
