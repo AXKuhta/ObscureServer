@@ -349,7 +349,7 @@ Function ReceivePayload:Byte Ptr(PayloadLength:Long, Parameters:ServeThreadParam
 		ReadAvail = SocketReadAvail(Parameters.ClientSocket)
 	
 		If ReadAvail = 0
-			usleep(1)
+			UDelay 1
 		Else
 			If (BytesStored + ReadAvail) > PayloadLength
 				LoggedPrint("WARNING: Have more bytes to receive than advertised. Capping to the advertised value.")

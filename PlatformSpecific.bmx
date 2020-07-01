@@ -5,29 +5,12 @@ Import BRL.StandardIO
 Import "Utils.bmx"
 
 Extern
-	?Not win32
-		Function usleep:Int(usec:ULong)
-	?
-
 	?win32 Or ptr32
 	Function crc32:ULong( crc:UInt,source:Byte Ptr,source_len:UInt )="unsigned long crc32(unsigned long, const void *, unsigned int)"
 	?ptr64 And Not win32
 	Function crc32:ULong( crc:ULong,source:Byte Ptr,source_len:ULong )="unsigned long crc32(unsigned long, const void *, unsigned int)"
 	?
 End Extern
-
-?win32
-	' Use our own """usleep""" if we are on Windows
-	' Sadly on Windows busy-looping with Sleep(0) doesn't work too well, as it still causes
-	' the CPU core load to jump to 100% and ramps the power consumption from 1W to 18W
-	Function usleep:Int(uSec:ULong)
-		If uSec < 1000
-			Delay 1
-		Else
-			Delay Int(uSec / 1000)
-		End If
-	End Function
-?
 
 Function PrintClientIP(ClientSocket:TSocket, LookupHostname:Int = 0)
 	LoggedPrint("IPv4: " + SocketRemoteIP(ClientSocket))
