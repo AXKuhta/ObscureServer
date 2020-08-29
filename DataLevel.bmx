@@ -1,3 +1,4 @@
+Import PUB.FreeProcess
 Import PUB.Zlib
 Import "Parameters.bmx"
 Import "Utils.bmx"
@@ -337,6 +338,54 @@ Function SendStreamToClient(SourceStream:TStream, Size:Long, Parameters:ServeThr
 	
 	MemFree(Buffer)
 End Function
+
+' This function is utilized to relay the content of pipes
+Function SendPipeToClient(Pipe:TPipeStream, Parameters:ServeThreadParameters)
+	Local LastPipeActivityMS:ULong = MilliSecs()
+	Local DesiredBytes:Long = 0
+	Local ActualBytes:Long = 0
+	Local SentBytes:Long = 0
+	Local BPC:Size_T = Parameters.BytesPerCycle
+	Local Buffer:Byte Ptr = MemAlloc(BPC)
+	Local Status:Int
+		
+	WriteLine(Parameters.ClientStream, "") ' Assuming nothing sent a CRLF CRLF to the client up to this point
+	
+	While True	
+		If RunAbilityCheck(Parameters) = 0
+			LoggedPrint("Sending pipe failed. " + SentBytes + " bytes sent, " + Pipe.ReadAvail() + " bytes still available.")
+			MemFree(Buffer)
+			Return
+		End If
+				
+		If MilliSecs() > LastPipeActivityMS + Parameters.PipeTimeout
+			' Simply break out of the loop if the pipe stays empty for too long
+			Exit
+		End If
+		
+		If Pipe.ReadAvail() > 0
+			LastPipeActivityMS = MilliSecs()
+		Else
+			Continue
+		End If
+	
+		DesiredBytes = Min(BPC, Pipe.ReadAvail())
+		ActualBytes = Pipe.Read(Buffer, DesiredBytes)
+		
+		If ActualBytes <> DesiredBytes
+			LoggedPrint("Wanted to read " + DesiredBytes + " bytes but got " + ActualBytes + " bytes. Continuing.")
+		End If
+		
+		Status = Parameters.ClientSocket.Send(Buffer, ActualBytes)
+		
+		SentBytes :+ ActualBytes
+	Wend
+	
+	LoggedPrint("Pipe has been emptied. " + SentBytes + " bytes sent.")
+		
+	MemFree(Buffer)
+End Function
+
 
 Function ReceivePayload:Byte Ptr(PayloadLength:Long, Parameters:ServeThreadParameters)
 	Local WaitStartMS:ULong = MilliSecs()

@@ -11,6 +11,7 @@ Type ServeThreadParameters
 	Field ClientSocket:TSocket
 	Field ClientStream:TStream
 	Field Timeout:Long
+	Field PipeTimeout:Long
 	Field PayloadTimeout:Long
 	Field ThreadStartupMS:ULong
 	Field ThreadLastActivityMS:ULong

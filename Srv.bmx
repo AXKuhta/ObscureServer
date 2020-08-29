@@ -26,7 +26,9 @@ While True
 		Parameters.ClientSocket = SocketConnection
 		
 		Parameters.Timeout = 15000 ' This is an inactivity timeout. If the thread keeps getting requests every so often, it could keep running forever. Perhaps there should be an age limit that doesn't take activity into account?
+		Parameters.PipeTimeout = 250 ' Don't wait much for pipes
 		Parameters.PayloadTimeout = 3000 ' For how long the server will wait for payload to go through
+		
 		Parameters.BytesPerCycle = 16*1024 '16 * 1024
 		Parameters.CompressionSizeLimit = 4 * 1024 * 1024 ' Compression size limit of 4MB; Trying to compress large files can cause noticeable delays
 		Parameters.EnableHostnameLookup = 0
