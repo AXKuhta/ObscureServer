@@ -53,6 +53,11 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		Repeat
 			If RunAbilityCheck(Parameters, 1) = 0 Then Return
 			If SocketReadAvail(ClientSocket) > 0 Then Exit
+			
+			' HTTPS hack
+			' I haven't found any better way to poll mbedtls
+			ClientSocket.Recv(Null, 0)
+			
 			UDelay 200 ' Take a 200 microsecond nap
 		Forever
 		

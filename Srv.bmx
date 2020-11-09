@@ -1,12 +1,12 @@
 Framework BRL.Threads
+Import "SSLSocket.bmx"
 Import "ServeThread.bmx"
 
-Local Port:Int = 80
+Print "ObscureServer HTTPS edition starting..."
 
-Local Socket:TSocket = CreateTCPSocket()
-If Not BindSocket(Socket, Port) Then RuntimeError("Failed to bind to port " + Port + "!")
+Local Port:Int = 443
 
-SocketListen(Socket)
+Local Socket:TSocket = CreateSSLSocket(Port)
 
 Local SocketConnection:TSocket
 Local Parameters:ServeThreadParameters
@@ -19,7 +19,7 @@ While True
 	' You can enable blocking mode on SocketAccept() by passing -1 as timeout
 	' You can also set it to some amount of time (in ms), if you still want the non-blocking mode
 	SocketConnection = SocketAccept(Socket, -1)
-
+	
 	If SocketConnection
 		Parameters = New ServeThreadParameters
 		
