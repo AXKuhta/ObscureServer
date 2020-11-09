@@ -254,12 +254,6 @@ Type TSSLSocket Extends TSocket
 		If Status
 			RuntimeError "TSSLConfig.OwnCert() error: " + Status
 		End If
-		
-		'Status = Socket.mbedtls_ssl.Setup(Socket.mbedtls_config)
-		'
-		'If Status
-		'	RuntimeError "TSSLContext.Setup() error: " + Status
-		'End If 
 	End Function
 	' =================================================================
 	
