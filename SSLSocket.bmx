@@ -171,7 +171,6 @@ Type TSSLSocket Extends TSocket
 	
 	Field _connected:Int
 	
-	Field new_socket:TSSLSocket
 	
 	' Wrappers with error handling
 	' =================================================================
