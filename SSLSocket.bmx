@@ -75,27 +75,17 @@ Type TSSLSocket Extends TSocket
 		Local ClientIP:String
 		Local Status:Int
 		
-		' Saving mbedtls_client_socket into a sacrificial local variable is required to sidestep a weird bug
-		' mbedtls_client_socket becomes undereferenceable (Varptr mbedtls_client_socket becomes 56) after calling mbedtls_listen_socket.Accept()
-		' DOES NOT happen in debug mode, DOES Not happen If the Function returns Self
-		' Compiler bug?
-		Local st_client_socket:TNetContext = New TNetContext.Create()
-		
-		' Compiler bug #2?
-		' Crashes if these prints are commented out
-		Print "Other: " + Byte Ptr mbedtls_client_socket
-		Print "Deref: " + Byte Ptr st_client_socket
 		
 		' Create a new socket for the client comms
 		Local NewSocket:TSSLSocket = New TSSLSocket
 		
 		' Minimal initialization
-		NewSocket.mbedtls_client_socket = New TNetContext
+		NewSocket.mbedtls_client_socket = New TNetContext.Create()
 		NewSocket.mbedtls_config = mbedtls_config
 		NewSocket.mbedtls_ssl = New TSSLContext.Create()
 		
 		
-		Status = mbedtls_listen_socket.Accept(st_client_socket, ClientIP)
+		Status = mbedtls_listen_socket.Accept(NewSocket.mbedtls_client_socket, ClientIP)
 		
 		If Status
 			RuntimeError "TNetContextAccept.Accept() error: " + Status
@@ -104,10 +94,7 @@ Type TSSLSocket Extends TSocket
 		
 		NewSocket._remoteIp = ClientIP
 		NewSocket._connected = 1
-		
-		' Copy the active socket pointer over
-		MemCopy(NewSocket.mbedtls_client_socket, st_client_socket, SizeOf(TNetContext))
-		
+				
 		' Let the new socket set up SSL by itself
 		' Bail out if that fails
 		If Not NewSocket.SelfSetup()
