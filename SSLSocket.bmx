@@ -178,7 +178,6 @@ Type TSSLSocket Extends TSocket
 		Socket.mbedtls_pk = New TPkContext.Create()
 				
 		Socket.mbedtls_listen_socket = New TNetContext.Create()
-		Socket.mbedtls_client_socket = New TNetContext.Create()
 		
 		Socket.mbedtls_entropy = New TEntropyContext.Create()
 		Socket.mbedtls_rctx = New TRandContext.Create()
