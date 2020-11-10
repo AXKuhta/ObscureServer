@@ -138,7 +138,7 @@ Type TSSLSocket Extends TSocket
 		
 			' Error out on unknown status
 			If Status <> MBEDTLS_ERR_SSL_WANT_READ And Status <> MBEDTLS_ERR_SSL_WANT_WRITE
-				Print "TSSLSocket: handshake error: " + Status
+				Print "TSSLSocket: handshake error: " + MBEDTLSError(Status)
 				Return Null
 			End If
 			
