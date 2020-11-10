@@ -109,12 +109,18 @@ Type TSSLSocket Extends TSocket
 		MemCopy(NewSocket.mbedtls_client_socket, st_client_socket, SizeOf(TNetContext))
 		
 		' Let the new socket set up SSL by itself
-		NewSocket.SelfSetup()
+		' Bail out if that fails
+		If Not NewSocket.SelfSetup()
+			NewSocket.Close()
+			Return Null
+		End If
 		
 		' Return it
 		Return NewSocket
 	End Method
 	
+	' Returns 0 on handshake failure
+	' Returns 1 on success
 	Method SelfSetup()
 		Local Status:Int = mbedtls_ssl.Setup(mbedtls_config)
 		
@@ -138,6 +144,8 @@ Type TSSLSocket Extends TSocket
 			
 			Status = mbedtls_ssl.Handshake()
 		End While
+		
+		Return 1
 	End Method
 	
 	Method RemoteIp:String() Override
