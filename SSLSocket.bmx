@@ -161,7 +161,7 @@ Type TSSLSocket Extends TSocket
 	End Method
 	
 	Method Close() Override
-		mbedtls_client_socket.Free()
+		' Do nothing...
 	End Method	
 	
 		
