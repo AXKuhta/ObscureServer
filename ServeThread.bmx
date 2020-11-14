@@ -56,7 +56,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 			
 			' HTTPS hack
 			' I haven't found any better way to poll mbedtls
-			ClientSocket.Recv(Null, 0)
+			' ClientSocket.Recv(Null, 0)
 			
 			UDelay 200 ' Take a 200 microsecond nap
 		Forever

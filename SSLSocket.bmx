@@ -23,9 +23,13 @@ Type TSSLSocket Extends TSocket
 				Print "TSSLSocket: Connection reset"
 				_connected = 0
 				Return 0
+			Else
+				Print "TSSLSocket: send error: " + MBEDTLSError(Status)
+				_connected = 0
+				Return 0
 			End If
 		Wend
-		
+
 		Return Status
 	End Method
 
@@ -45,6 +49,10 @@ Type TSSLSocket Extends TSocket
 				Return 0
 			ElseIf Status = MBEDTLS_ERR_NET_CONN_RESET
 				Print "TSSLSocket: Connection reset"
+				_connected = 0
+				Return 0
+			Else
+				Print "TSSLSocket: recv error: " + MBEDTLSError(Status)
 				_connected = 0
 				Return 0
 			End If
@@ -144,6 +152,25 @@ Type TSSLSocket Extends TSocket
 	End Method
 	
 	Method ReadAvail:Int() Override
+		Local Status:Int
+		
+		' Attempt to push the SSL decoder forward only if raw data pending
+		Status = mbedtls_client_socket.Poll(MBEDTLS_NET_POLL_READ, Null)
+		
+		If Status < 0
+			RuntimeError "TSSLSocket: polling error"
+		End If
+		
+		If Status > 0
+			While mbedtls_ssl.GetBytesAvail() = 0
+				Recv(Null, 0)
+								
+				If _connected = 0 Then Exit
+			Wend
+			
+			Print "TSSLSocket: exiting the flush loop, " + mbedtls_ssl.GetBytesAvail() + " bytes now available"
+		End If
+				
 		Return mbedtls_ssl.GetBytesAvail()
 	End Method
 	
@@ -239,7 +266,7 @@ Type TSSLSocket Extends TSocket
 		
 		Socket.mbedtls_config.RNG(RandomFunc, Socket.mbedtls_rctx)
 		Socket.mbedtls_config.DBG(MBedSSLDebug, Null)
-		Socket.mbedtls_config.SetDebugThreshold(0)
+		Socket.mbedtls_config.SetDebugThreshold(1)
 		
 		Socket.mbedtls_config.CaChain(Socket.mbedtls_cert.GetNext(), Null)
 		
