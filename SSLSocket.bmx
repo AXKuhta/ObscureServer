@@ -177,7 +177,17 @@ Type TSSLSocket Extends TSocket
 	End Method
 	
 	Method Close() Override
-		' Do nothing...
+		Local Status:Int
+		
+		If _connected = 1
+			Status = mbedtls_ssl.CloseNotify()
+			
+			If Status < 0
+				Print "TSSLSocket: error while closing the ssl session: " + MBEDTLSError(Status)
+			End If
+		End If
+		
+		_connected = 0
 	End Method	
 	
 		
