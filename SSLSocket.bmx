@@ -158,7 +158,9 @@ Type TSSLSocket Extends TSocket
 		Status = mbedtls_client_socket.Poll(MBEDTLS_NET_POLL_READ, Null)
 		
 		If Status < 0
-			RuntimeError "TSSLSocket: polling error"
+			Print "TSSLSocket: polling error: " + MBEDTLSError(Status)
+			_connected = 0
+			Return 0
 		End If
 		
 		If Status > 0
