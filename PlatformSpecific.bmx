@@ -23,7 +23,11 @@ End Function
 Function GzipMemory:Int(CompressedMemory:Byte Ptr, CompressedSize:UInt Var, UncompressedMemory:Byte Ptr, Size:UInt)
 	Local UncompressedCRC:ULong = 0
 	Local CompressStatus:Int
+	?ptr64 And raspberrypi
+	Local CompressedSize2:ULong = CompressedSize
+	?Not raspberrypi
 	Local CompressedSize2:UInt = CompressedSize
+	?
 	
 	UncompressedCRC = crc32(0, UncompressedMemory, Size)
 	
