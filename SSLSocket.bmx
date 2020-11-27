@@ -169,8 +169,6 @@ Type TSSLSocket Extends TSocket
 			Recv(Null, 0)
 			
 			If _connected = 0 Then Return 0
-			
-			Print "TSSLSocket: exiting the flush loop, " + mbedtls_ssl.GetBytesAvail() + " bytes now available"
 		End If
 				
 		Return mbedtls_ssl.GetBytesAvail()
