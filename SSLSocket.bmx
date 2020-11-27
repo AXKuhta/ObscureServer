@@ -164,11 +164,11 @@ Type TSSLSocket Extends TSocket
 		End If
 		
 		If Status > 0
-			While mbedtls_ssl.GetBytesAvail() = 0
-				Recv(Null, 0)
-								
-				If _connected = 0 Then Exit
-			Wend
+			' Alright, there's some raw data pending
+			' The loop in Recv() should force it to be decoded
+			Recv(Null, 0)
+			
+			If _connected = 0 Then Return 0
 			
 			Print "TSSLSocket: exiting the flush loop, " + mbedtls_ssl.GetBytesAvail() + " bytes now available"
 		End If
