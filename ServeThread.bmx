@@ -99,6 +99,9 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 					If IsInArray("gzip", ExtractHeaderFlags(Headers[i])) Then Parameters.EncodingMode = "gzip"
 					If IsInArray("zstd", ExtractHeaderFlags(Headers[i])) Then Parameters.EncodingMode = "zstd"
 					
+				Case "content-encoding"
+					Parameters.RequestPayloadEncodingMode = ExtractHeaderFlags(Headers[i])[0]
+					
 				Case "destination"
 					ParsedRequest.Destination = ParseDestination(ExtractHeaderFlags(Headers[i])[0])
 					LoggedPrint("Got destination: " + ParsedRequest.Destination)
@@ -111,6 +114,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 					ParsedRequest.RangeStart = ExtractRanges(Headers[i])[0]
 					ParsedRequest.RangeStop = ExtractRanges(Headers[i])[1]
 					LoggedPrint("Got ranges: " + ParsedRequest.RangeStart + "-" + ParsedRequest.RangeStop)
+					
 				
 				
 				Default
@@ -155,7 +159,6 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		End If
 			
 		If PayloadLength > 0
-			ParsedRequest.PayloadLength = PayloadLength
 			ParsedRequest.Payload = ReceivePayload(PayloadLength, Parameters)
 		End If
 
@@ -181,7 +184,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		End Select
 		
 		' Free the payload memory if it was ever allocated
-		If ParsedRequest.Payload Then MemFree(ParsedRequest.Payload)
+		If ParsedRequest.Payload.Pointer Then MemFree(ParsedRequest.Payload.Pointer)
 		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 

@@ -23,8 +23,8 @@ Function ProcessWebDAVRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		Return
 	End If
 	
-	If ParsedRequest.PayloadLength > 0
-		RequestString = String.FromBytes(ParsedRequest.Payload, Int(ParsedRequest.PayloadLength))
+	If ParsedRequest.Payload
+		RequestString = String.FromBytes(ParsedRequest.Payload.Pointer, Int(ParsedRequest.Payload.Size))
 		
 		Local XMLTree:TxmlDoc = TxmlDoc.readDoc(RequestString)
 		

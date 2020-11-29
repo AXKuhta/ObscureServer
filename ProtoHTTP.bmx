@@ -12,8 +12,7 @@ Type HTTPRequestStruct
 	Field Destination:String
 	Field RangeStart:Long = 0
 	Field RangeStop:Long = 0
-	Field Payload:Byte Ptr
-	Field PayloadLength:Long
+	Field Payload:MemoryVec
 End Type
 
 Function GetRequestHeaderValue:String(Request:String[], Target:String)
@@ -37,6 +36,7 @@ Function WriteHeaders(Parameters:ServeThreadParameters)
 	End If
 	
 	If Parameters.RangesAllowed = 1 Then WriteLine(Parameters.ClientStream, "Accept-Ranges: bytes")
+	If Parameters.RequestPayloadCompressionAllowed = 1 Then WriteLine(Parameters.ClientStream, "Accept-Encoding: gzip zstd")
 End Function
 
 Function ParseRequest:HTTPRequestStruct(Request:String)
@@ -190,7 +190,7 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	Local TargetDir:String = ExtractDir(ParsedRequest.Target)
 	Local Status:Int
 
-	LoggedPrint("Incoming file. Name: "+ParsedRequest.Target+"; Size: "+(ParsedRequest.PayloadLength / 1024)+"KB.")
+	LoggedPrint("Incoming file. Name: "+ParsedRequest.Target+"; Size: "+(ParsedRequest.Payload.Size / 1024)+"KB.")
 	
 	If Not Parameters.UploadsAllowed
 		LoggedPrint("Got a file upload, but that's not allowed. No changes to filesystem made.")
@@ -223,12 +223,12 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		ResponseCode = 204
 		
 		LoggedPrint("Creating ["+ParsedRequest.Target+"]")
-		Status = ReceiveFile(ParsedRequest.Target, ParsedRequest.Payload, ParsedRequest.PayloadLength)
+		Status = ReceiveFile(ParsedRequest.Target, ParsedRequest.Payload.Pointer, ParsedRequest.Payload.Size)
 	Else
 		' If it's a POST and the file does exist, we must update it
 		ResponseCode = 200
 		
-		If (TargetSize + ParsedRequest.PayloadLength) > Parameters.FilesizeAfterUpdateLimit
+		If (TargetSize + ParsedRequest.Payload.Size) > Parameters.FilesizeAfterUpdateLimit
 			' If this POST request would bring the target file size over the limit, refuse to do it
 			LoggedPrint("This POST would bring the file size over the limit!")
 			SendError(406, Parameters, "File is too large.")
@@ -236,7 +236,7 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		End If
 		
 		LoggedPrint("Updating ["+ParsedRequest.Target+"]")
-		Status = UpdateFile(ParsedRequest.Target, ParsedRequest.Payload, ParsedRequest.PayloadLength)
+		Status = UpdateFile(ParsedRequest.Target, ParsedRequest.Payload.Pointer, ParsedRequest.Payload.Size)
 	End If
 	
 	If Status <> 0

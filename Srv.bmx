@@ -35,6 +35,7 @@ While True
 		Parameters.EnableCompression = 1
 		Parameters.EnableCaching = 1
 		Parameters.CachingLocation = "./"
+		Parameters.RequestPayloadCompressionAllowed = 1
 		Parameters.RequestPayloadLengthLimit = 8*1024*1024 ' Limit the payload that the client can send to 8MB
 		Parameters.FilesizeAfterUpdateLimit = 16*1024*1024 ' May not grow files to be larger than 16MB
 		Parameters.KeepAliveAllowed = 1
