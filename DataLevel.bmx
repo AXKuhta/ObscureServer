@@ -293,6 +293,8 @@ Function CompressMemory:MemoryVec(UncompressedMemory:Byte Ptr, Size:Size_T, Algo
 	Return Result
 End Function
 
+' This function will decompress the supplied memory
+' Returns null on failure
 Function DecompressMemory:MemoryVec(CompressedMemory:Byte Ptr, Size:Size_T, Algorithm:String)
 	Local DecompressedSize:Size_T = Size + 64 * 1024 ' Payload size + additional 64KB of memory
 	Local Status:Int
