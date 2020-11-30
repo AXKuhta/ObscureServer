@@ -255,37 +255,81 @@ End Function
 ' This function will compress the supplied memory
 ' Returns null on failure
 Function CompressMemory:MemoryVec(UncompressedMemory:Byte Ptr, Size:Size_T, Algorithm:String)
-	Local CompressedMemory:Byte Ptr = MemAlloc(Size + 64 * 1024) ' File size + additional 64KB of memory
-		
-	Local CompressedSize:UInt = Size + 64 * 1024
-	Local CompressStatus:Int
+	Local CompressedSize:Size_T = Size + 64 * 1024 ' File size + additional 64KB of memory
+	Local Status:Int
+	
+	Local CompressedMemory:Byte Ptr = MemAlloc(CompressedSize)
 	
 	If Algorithm = "gzip"
-		CompressStatus = GzipMemory(CompressedMemory, CompressedSize, UncompressedMemory, Size)
-		If CompressStatus <> 0
-			LoggedPrint("ABORTING: zlib error " + CompressStatus)
+		Status = GzipMemory(CompressedMemory, CompressedSize, UncompressedMemory, Size)
+		If Status <> 0
+			LoggedPrint("ABORTING: zlib error " + Status)
 			MemFree(CompressedMemory)
 			Return Null
 		End If
 	ElseIf Algorithm = "zstd"
-		CompressStatus = ZstdMemory(CompressedMemory, CompressedSize, UncompressedMemory, Size)
-		If Not CompressStatus > 0
-			LoggedPrint("ABORTING: zstd error " + CompressStatus)
+		' Zstd returns the compressed size as a status
+		' But if the value is negative, some error occured
+		Status = ZstdMemory(CompressedMemory, CompressedSize, UncompressedMemory, Size)
+		If Status < 0
+			LoggedPrint("ABORTING: zstd error " + Status)
 			MemFree(CompressedMemory)
 			Return Null
 		End If
-		CompressedSize = CompressStatus ' Zstd returns the compressed size as a status
+		CompressedSize = Status
 	Else
 		LoggedPrint("ABORTING: unknown algo: " + Algorithm)
+		MemFree(CompressedMemory)
 		Return Null
 	End If
 	
 	LoggedPrint("Size win: " + Long(Size - CompressedSize) + " bytes (" + (100.0 - (Float(CompressedSize) / Float(Size)) * 100.0) + "% sheared off).")
 	
-	Local Result:MemoryVec
+	Local Result:MemoryVec = New MemoryVec
 	
 	Result.Pointer = CompressedMemory
 	Result.Size = CompressedSize
+	
+	Return Result
+End Function
+
+' This function will decompress the supplied memory
+' Returns null on failure
+Function DecompressMemory:MemoryVec(CompressedMemory:Byte Ptr, Size:Size_T, Algorithm:String)
+	Local DecompressedSize:Size_T = Size + 64 * 1024 ' Payload size + additional 64KB of memory
+	Local Status:Int
+	
+	Local DecompressedMemory:Byte Ptr = MemAlloc(DecompressedSize)
+	
+	If Algorithm = "gzip"
+		Status = UnGzipMemory(DecompressedMemory, DecompressedSize, CompressedMemory, Size)
+		If Status <> 0
+			LoggedPrint("ABORTING: zlib error " + Status)
+			MemFree(DecompressedMemory)
+			Return Null
+		End If
+	ElseIf Algorithm = "zstd"
+		' Zstd returns the compressed size as a status
+		' But if the value is negative, some error occured
+		Status = UnZstdMemory(DecompressedMemory, DecompressedSize, CompressedMemory, Size)
+		If Status < 0
+			LoggedPrint("ABORTING: zstd error " + Status)
+			MemFree(DecompressedMemory)
+			Return Null
+		End If
+		DecompressedSize = Status
+	Else
+		LoggedPrint("ABORTING: unknown algo: " + Algorithm)
+		MemFree(DecompressedMemory)
+		Return Null
+	End If
+	
+	LoggedPrint("Size win: " + Long(DecompressedSize - Size) + " bytes (" + (100.0 - (Float(Size) / Float(DecompressedSize)) * 100.0) + "% sheared off).")
+	
+	Local Result:MemoryVec = New MemoryVec
+	
+	Result.Pointer = DecompressedMemory
+	Result.Size = DecompressedSize
 	
 	Return Result
 End Function
@@ -387,12 +431,17 @@ Function SendPipeToClient(Pipe:TPipeStream, Parameters:ServeThreadParameters)
 End Function
 
 
-Function ReceivePayload:Byte Ptr(PayloadLength:Long, Parameters:ServeThreadParameters)
+Function ReceivePayload:MemoryVec(PayloadLength:Long, Parameters:ServeThreadParameters)
 	Local WaitStartMS:ULong = MilliSecs()
 	Local BytesStored:Long
 	Local ReadAvail:Long
 	Local TimedOut:Int
+	Local Payload:MemoryVec = New MemoryVec
+	
 	Local Memory:Byte Ptr = MemAlloc(PayloadLength)
+	
+	Payload.Pointer = Memory
+	Payload.Size = PayloadLength
 	
 	Repeat
 		ReadAvail = SocketReadAvail(Parameters.ClientSocket)
@@ -418,8 +467,27 @@ Function ReceivePayload:Byte Ptr(PayloadLength:Long, Parameters:ServeThreadParam
 	If TimedOut
 		LoggedPrint("Timed out while waiting for the payload to go through. "+(PayloadLength - BytesStored)+" bytes not received. Continuing anyway.")
 	End If
+	
+	If Parameters.RequestPayloadCompressionAllowed = 1
+		If Parameters.RequestPayloadEncodingMode <> ""
+			LoggedPrint("Decompressing payload.")
+		
+			Payload = DecompressMemory(Memory, PayloadLength, Parameters.RequestPayloadEncodingMode)
+			
+			If Not Payload
+				LoggedPrint("Failed to decompress the payload!")
+				
+				' Repopulate the Payload structure with original info in the case of failure
+				' Original, raw data will be stored to file
+				Payload.Pointer = Memory
+				Payload.Size = PayloadLength
+			Else
+				MemFree(Memory)
+			End If
+		End If
+	End If
 
-	Return Memory
+	Return Payload
 End Function
 
 ' This function will create a new file and write data to it
