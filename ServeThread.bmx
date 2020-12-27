@@ -146,7 +146,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		If PayloadLength > Parameters.RequestPayloadLengthLimit
 			' This situation can occur if a client tried to upload a file that's too big
 			' We'll tell them that there's a problem and bail
-			LoggedPrint("Request payload is over the limit: " + PayloadLength + " bytes vs " + Parameters.RequestPayloadLengthLimit + " bytes. Aborting.")
+			LoggedPrint("Error 413. Request payload is over the limit: " + PayloadLength + " bytes vs " + Parameters.RequestPayloadLengthLimit + " bytes.")
 			SendError(413, Parameters) 
 			Return
 		End If
@@ -179,6 +179,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 				ProcessWebDAVRequest(ParsedRequest, Parameters)
 								
 			Default ' 405 Method not supported
+				LoggedPrint("Error 405. Method ["+ParsedRequest.Action+"] not supported.")
 				SendError(405, Parameters)
 								
 		End Select
