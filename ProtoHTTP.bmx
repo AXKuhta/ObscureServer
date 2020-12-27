@@ -36,7 +36,7 @@ Function WriteHeaders(Parameters:ServeThreadParameters)
 	End If
 	
 	If Parameters.RangesAllowed = 1 Then WriteLine(Parameters.ClientStream, "Accept-Ranges: bytes")
-	If Parameters.RequestPayloadCompressionAllowed = 1 Then WriteLine(Parameters.ClientStream, "Accept-Encoding: gzip zstd")
+	If Parameters.RequestPayloadCompressionAllowed = 1 Then WriteLine(Parameters.ClientStream, "Accept-Encoding: gzip, zstd")
 End Function
 
 Function ParseRequest:HTTPRequestStruct(Request:String)

@@ -1,4 +1,3 @@
-Import Text.XML
 Import "Utils.bmx"
 Import "Parameters.bmx"
 Import "DataLevel.bmx"
@@ -24,12 +23,10 @@ Function ProcessWebDAVRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	End If
 	
 	If ParsedRequest.Payload
-		RequestString = String.FromBytes(ParsedRequest.Payload.Pointer, Int(ParsedRequest.Payload.Size))
-		
-		Local XMLTree:TxmlDoc = TxmlDoc.readDoc(RequestString)
-		
+		RequestString = String.FromUTF8Bytes(ParsedRequest.Payload.Pointer, Int(ParsedRequest.Payload.Size))
+				
 		' TODO: Handle the creation of collections (i.e. folders)
-		' LoggedPrint("Client XML: " + XMLTree.ToStringFormat(True))
+		' LoggedPrint("Client XML: " + RequestString)
 	Else
 		LoggedPrint("Client didn't send any XML payload for PROPFIND!")
 	End If
@@ -74,26 +71,23 @@ End Function
 Function BuildXMLDirectoryListing:String(DirectoryPath:String)
 	Local DirectoryFiles:Byte Ptr
 		
-	Local XMLTree:TxmlDoc = TxmlDoc.newDoc("1.0") ' Create a new XML1.0
-	Local RootNode:TxmlNode = TxmlNode.newNode("D:multistatus")
-	XMLTree.setRootElement(RootNode)
-	RootNode.addAttribute("xmlns:D", "DAV:")
+	Local RootNode:TXMLTree = TXMLTree.NewTree("D:multistatus", "", " xmlns:D=~qDAV:~q")
 	
-	Local ResponseNode:TxmlNode
-	Local PropstatNode:TxmlNode
-	Local PropNode:TxmlNode
+	Local ResponseNode:TXMLTree
+	Local PropstatNode:TXMLTree
+	Local PropNode:TXMLTree
 	
 	' A special entry for currently opened folder
-	ResponseNode = RootNode.addChild("D:response")
+	ResponseNode = RootNode.AddChild("D:response")
 	If DirectoryPath = "."
-		ResponseNode.addChild("D:href", "/") ' Href is at root
+		ResponseNode.AddChild("D:href", "/") ' Href is at root
 	Else
-		ResponseNode.addChild("D:href", Mid(DirectoryPath, 2) + "/") ' Href is within a subfolder
+		ResponseNode.AddChild("D:href", Mid(DirectoryPath, 2) + "/") ' Href is within a subfolder
 	End If
-	PropstatNode = ResponseNode.addChild("D:propstat")
-	PropNode = PropstatNode.addChild("D:prop")
-	PropNode.addChild("D:resourcetype").addChild("D:collection")
-	PropNode.addChild("D:displayname", "") ' But the name is empty
+	PropstatNode = ResponseNode.AddChild("D:propstat")
+	PropNode = PropstatNode.AddChild("D:prop")
+	PropNode.AddChild("D:resourcetype").AddChild("D:collection")
+	PropNode.AddChild("D:displayname", "") ' But the name is empty
 	PropstatNode.AddChild("D:status", "HTTP/1.1 200 OK")
 	
 	
@@ -115,8 +109,8 @@ Function BuildXMLDirectoryListing:String(DirectoryPath:String)
 				
 		EntryPath = DirectoryPath + "/" + ListEntryName
 		
-		ResponseNode = RootNode.addChild("D:response")
-		ResponseNode.addChild("D:href", Right(EntryPath, Len(EntryPath) - 1)) ' Will trim the dot on the left
+		ResponseNode = RootNode.AddChild("D:response")
+		ResponseNode.AddChild("D:href", Right(EntryPath, Len(EntryPath) - 1)) ' Will trim the dot on the left
 		
 		PropstatNode = ResponseNode.addChild("D:propstat")
 		PropNode = PropstatNode.addChild("D:prop")
@@ -126,52 +120,132 @@ Function BuildXMLDirectoryListing:String(DirectoryPath:String)
 			Case 0
 				Print "WebDAV: Unable to stat file: " + EntryPath 
 			Case 1
-				PropNode.addChild("D:creationdate")
-				PropNode.addChild("D:displayname", StripDir(EntryPath))
-				PropNode.addChild("D:getcontentlength", FileSize(EntryPath))
-				PropNode.addChild("D:getcontenttype")
-				PropNode.addChild("D:getetag")
-				PropNode.addChild("D:getlastmodified", GetHTTPTime(FileTime(EntryPath)))
-				PropNode.addChild("D:resourcetype")
-				PropNode.addChild("D:supportedlock")
+				PropNode.AddChild("D:creationdate")
+				PropNode.AddChild("D:displayname", StripDir(EntryPath))
+				PropNode.AddChild("D:getcontentlength", FileSize(EntryPath))
+				PropNode.AddChild("D:getcontenttype")
+				PropNode.AddChild("D:getetag")
+				PropNode.AddChild("D:getlastmodified", GetHTTPTime(FileTime(EntryPath)))
+				PropNode.AddChild("D:resourcetype")
+				PropNode.AddChild("D:supportedlock")
 			Case 2
-				PropNode.addChild("D:creationdate")
-				PropNode.addChild("D:displayname", StripDir(EntryPath))
-				PropNode.addChild("D:resourcetype").addChild("D:collection")
-				PropNode.addChild("D:supportedlock")
+				PropNode.AddChild("D:creationdate")
+				PropNode.AddChild("D:displayname", StripDir(EntryPath))
+				PropNode.AddChild("D:resourcetype").AddChild("D:collection")
+				PropNode.AddChild("D:supportedlock")
 		End Select
 		
 		PropstatNode.AddChild("D:status", "HTTP/1.1 200 OK")
 	Forever
 	
-	'Print "Directory listing: " + XMLTree.ToStringFormat(True)
-	Return XMLTree.ToString()
+	'Print "Directory listing: " + RootNode.TransformIntoText()
+	Return RootNode.TransformIntoText()
 End Function
 
 Function BuildXMLFileStat:String(FilePath:String)
-	Local XMLTree:TxmlDoc = TxmlDoc.newDoc("1.0")
-	Local RootNode:TxmlNode = TxmlNode.newNode("D:multistatus")
-	XMLTree.setRootElement(RootNode)
-	RootNode.addAttribute("xmlns:D", "DAV:")
+	Local RootNode:TXMLTree = TXMLTree.NewTree("D:multistatus", "", " xmlns:D=~qDAV:~q")
 	
-	Local ResponseNode:TxmlNode
-	Local PropstatNode:TxmlNode
-	Local PropNode:TxmlNode
+	Local ResponseNode:TXMLTree
+	Local PropstatNode:TXMLTree
+	Local PropNode:TXMLTree
 	
-	ResponseNode = RootNode.addChild("D:response")
-	ResponseNode.addChild("D:href", "/" + FilePath)
-	PropstatNode = ResponseNode.addChild("D:propstat")
-	PropNode = PropstatNode.addChild("D:prop")
-	PropNode.addChild("D:creationdate")
-	PropNode.addChild("D:displayname", StripDir(FilePath))
-	PropNode.addChild("D:getcontentlength", FileSize(FilePath))
-	PropNode.addChild("D:getcontenttype")
-	PropNode.addChild("D:getetag")
-	PropNode.addChild("D:getlastmodified", GetHTTPTime(FileTime(FilePath)))
-	PropNode.addChild("D:resourcetype")
-	PropNode.addChild("D:supportedlock")
+	ResponseNode = RootNode.AddChild("D:response")
+	ResponseNode.AddChild("D:href", "/" + FilePath)
+	PropstatNode = ResponseNode.AddChild("D:propstat")
+	PropNode = PropstatNode.AddChild("D:prop")
+	PropNode.AddChild("D:creationdate")
+	PropNode.AddChild("D:displayname", StripDir(FilePath))
+	PropNode.AddChild("D:getcontentlength", FileSize(FilePath))
+	PropNode.AddChild("D:getcontenttype")
+	PropNode.AddChild("D:getetag")
+	PropNode.AddChild("D:getlastmodified", GetHTTPTime(FileTime(FilePath)))
+	PropNode.AddChild("D:resourcetype")
+	PropNode.AddChild("D:supportedlock")
 	PropstatNode.AddChild("D:status", "HTTP/1.1 200 OK")
 	
-	'Print "Stat for a file:" + XMLTree.ToStringFormat(True)
-	Return XMLTree.ToString()
+	'Print "Stat for a file:" + RootNode.TransformIntoText()
+	Return RootNode.TransformIntoText()
 End Function
+
+
+' Minimalistic XML builder
+Type TXMLTree
+	' Data
+	Field Name:String
+	Field Value:String
+	Field Version:String ' Populated only for the root node
+	Field Attributes:String
+
+	' Structure
+	Field Parent:TXMLTree
+	
+	Field FirstChild:TXMLTree ' Stays null most of the time
+	Field LastChild:TXMLTree ' Stays null most of the time
+	
+	Field NextNode:TXMLTree
+	
+	' Functions
+	Function NewTree:TXMLTree(Name:String, Value:String = "", Attributes:String = "")
+		Local NewTree:TXMLTree = New TXMLTree
+		
+		NewTree.Name = Name
+		NewTree.Value = Value
+		NewTree.Version = "<?xml version=~q1.0~q encoding=~qutf-8~q?>"
+		NewTree.Attributes = Attributes
+
+		Return NewTree
+	End Function
+	
+	Method AddChild:TXMLTree(Name:String, Value:String = "", Attributes:String = "")
+		Local NewNode:TXMLTree = New TXMLTree
+		
+		NewNode.Name = Name
+		NewNode.Value = Value
+		NewNode.Attributes = Attributes
+		
+		NewNode.Parent = Self
+		
+		
+		' One-way linked list generation
+		If FirstChild = Null
+			FirstChild = NewNode
+			LastChild = NewNode
+		Else
+			LastChild.NextNode = NewNode
+			LastChild = NewNode
+		End If
+		
+		Return NewNode
+	End Method
+		
+	Method TransformIntoText:String()
+		Local Result:String = ""
+		
+		' Include the version string on a root node
+		If Parent = Null
+			Result :+ Version
+		End If
+		
+		' Check if the node is empty and use the short code path if so
+		' Otherwise go for the iterating code path
+		If Value = "" And FirstChild = Null
+			Result :+ "<"+Name+Attributes+" />"
+		Else
+			Result :+ "<"+Name+Attributes+">"
+			Result :+ Value
+			
+			' Recursively go through children
+			Local Node:TXMLTree = FirstChild
+			
+			While Node <> Null
+				Result :+ Node.TransformIntoText()
+				
+				Node = Node.NextNode
+			Wend
+			
+			Result :+ "</"+Name+">"
+		End If
+		
+		Return Result
+	End Method
+End Type
