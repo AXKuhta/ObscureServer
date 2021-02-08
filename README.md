@@ -26,7 +26,7 @@ The following list of tested software should give you an idea about the server's
   File downloads, upload, renames and removes work. WebDAV XML compression also works.
   
 - MiXPlorer:
-  Fails if compression is enabled, otherwise works but still janky.
+  Functions, also with WebDAV XML compression.
   
 - WinSCP:
   Works but janky. Doesn't use compression at all.
