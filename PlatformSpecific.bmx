@@ -5,10 +5,10 @@ Import BRL.StandardIO
 Import "Utils.bmx"
 
 Extern
-	?win32 Or ptr32
-	Function crc32:ULong( crc:UInt,source:Byte Ptr,source_len:UInt )="unsigned long crc32(unsigned long, const void *, unsigned int)"
 	?ptr64 And Not win32
 	Function crc32:ULong( crc:ULong,source:Byte Ptr,source_len:ULong )="unsigned long crc32(unsigned long, const void *, unsigned int)"
+	?ptr32 Or win32
+	Function crc32:ULong( crc:UInt,source:Byte Ptr,source_len:UInt )="unsigned long crc32(unsigned long, const void *, unsigned int)"
 	?
 End Extern
 
@@ -23,9 +23,9 @@ End Function
 Function GzipMemory:Int(CompressedMemory:Byte Ptr, CompressedSize:Size_T Var, UncompressedMemory:Byte Ptr, Size:Size_T)
 	Local UncompressedCRC:Int = 0
 	Local Status:Int
-	?ptr64 And raspberrypi
+	?ptr64 And Not win32
 	Local CompressedSize2:ULong = CompressedSize
-	?Not raspberrypi
+	?ptr32 Or win32
 	Local CompressedSize2:UInt = CompressedSize
 	?
 		
@@ -68,9 +68,9 @@ End Function
 ' This function will taint the source memory!
 Function UnGzipMemory:Int(UncompressedMemory:Byte Ptr, Size:Size_T Var, CompressedMemory:Byte Ptr, CompressedSize:Size_T)
 	Local Status:Int
-	?ptr64 And raspberrypi
+	?ptr64 And Not win32
 	Local Size2:ULong = Size
-	?Not raspberrypi
+	?ptr32 Or win32
 	Local Size2:UInt = Size
 	?
 	
