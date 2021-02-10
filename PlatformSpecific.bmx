@@ -65,6 +65,7 @@ Function GzipMemory:Int(CompressedMemory:Byte Ptr, CompressedSize:Size_T Var, Un
 	Return Status
 End Function
 
+' This function will taint the source memory!
 Function UnGzipMemory:Int(UncompressedMemory:Byte Ptr, Size:Size_T Var, CompressedMemory:Byte Ptr, CompressedSize:Size_T)
 	Local Status:Int
 	?ptr64 And raspberrypi
@@ -75,6 +76,12 @@ Function UnGzipMemory:Int(UncompressedMemory:Byte Ptr, Size:Size_T Var, Compress
 	
 	Local StoredCRC:Int = 0
 	Local ActualCRC:Int = 0
+	
+	' The presence of a 10 byte header is required
+	If CompressedSize < 10
+		Print "UnGzipMemory: the data is too short to be a valid gzip"
+		Return -1
+	End If
 	
 	' Manually add a zlib-compatible header
 	CompressedMemory[8] = $78 ' + DEFLATE algorithm
