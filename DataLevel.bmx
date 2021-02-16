@@ -410,6 +410,7 @@ Function SendPipeToClient(Pipe:TPipeStream, Parameters:ServeThreadParameters)
 		If Pipe.ReadAvail() > 0
 			LastPipeActivityMS = MilliSecs()
 		Else
+			sched_yield()
 			Continue
 		End If
 	
