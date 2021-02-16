@@ -384,30 +384,14 @@ Function SendStreamToClient(SourceStream:TStream, Size:Long, Parameters:ServeThr
 End Function
 
 ' This function is utilized to relay the content of the process' pipes
-Function SendProcessPipe(Process:TProcess, Parameters:ServeThreadParameters, PipeID:Int = 0)
+Function SendProcessPipe(Process:TProcess, Pipe:TPipeStream, Parameters:ServeThreadParameters, PipeID:Int = 0)
 	Local LastPipeActivityMS:ULong = MilliSecs()
 	Local DesiredBytes:Long = 0
 	Local ActualBytes:Long = 0
 	Local SentBytes:Long = 0
-	
-	Local Pipe:TPipeStream
-
-	Select PipeID
-		Case 0 ' Stdout
-			Pipe = Process.Pipe
-		Case 1 ' Stderr
-			Pipe = Process.Err
-			
-		Default
-			LoggedPrint("Invalid pipe ID!")
-			Return
-	End Select
-	
-	
 	Local BPC:Size_T = Parameters.BytesPerCycle
 	Local Buffer:Byte Ptr = MemAlloc(BPC)
 	Local Status:Int
-	
 	
 	WriteLine(Parameters.ClientStream, "") ' Assuming nothing sent a CRLF CRLF to the client up to this point
 	
