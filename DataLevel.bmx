@@ -384,7 +384,7 @@ Function SendStreamToClient(SourceStream:TStream, Size:Long, Parameters:ServeThr
 End Function
 
 ' This function is utilized to relay the content of the process' pipes
-Function SendProcessPipe(Process:TProcess, Pipe:TPipeStream, Parameters:ServeThreadParameters, PipeID:Int = 0)
+Function SendProcessPipe(Process:TProcess, Pipe:TPipeStream, Parameters:ServeThreadParameters)
 	Local LastPipeActivityMS:ULong = MilliSecs()
 	Local DesiredBytes:Long = 0
 	Local ActualBytes:Long = 0
