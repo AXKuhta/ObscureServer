@@ -36,7 +36,7 @@ Function WriteHeaders(Parameters:ServeThreadParameters)
 	End If
 	
 	If Parameters.RangesAllowed = 1 Then WriteLine(Parameters.ClientStream, "Accept-Ranges: bytes")
-	If Parameters.RequestPayloadCompressionAllowed = 1 Then WriteLine(Parameters.ClientStream, "Accept-Encoding: gzip, zstd")
+	If Parameters.RequestPayloadCompressionAllowed = 1 Then WriteLine(Parameters.ClientStream, "Accept-Encoding: gzip zstd")
 End Function
 
 Function ParseRequest:HTTPRequestStruct(Request:String)
@@ -50,12 +50,12 @@ Function ParseRequest:HTTPRequestStruct(Request:String)
 	' If it doesn't, abort
 	If (RequestSplit.length <> 3) Then Return Null
 	
-	ReturnStruct.Action = RequestSplit[0]
-	ReturnStruct.Target = RequestSplit[1]
-	ReturnStruct.Version = RequestSplit[2]
+	ReturnStruct.Action 	= RequestSplit[0].ToUpper()
+	ReturnStruct.Target 	= RequestSplit[1]
+	ReturnStruct.Version 	= RequestSplit[2].ToUpper()
 	
 	' If the protocol is not HTTP, also fail
-	If Not Lower(ReturnStruct.Version).StartsWith("http") Then Return Null
+	If Not ReturnStruct.Version.StartsWith("HTTP") Then Return Null
 	
 	Return ReturnStruct
 End Function
