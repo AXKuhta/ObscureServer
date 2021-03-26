@@ -395,13 +395,7 @@ Function SendProcessPipe(Process:TProcess, Pipe:TPipeStream, Parameters:ServeThr
 	
 	WriteLine(Parameters.ClientStream, "") ' Assuming nothing sent a CRLF CRLF to the client up to this point
 	
-	While True	
-		If RunAbilityCheck(Parameters) = 0
-			LoggedPrint("Sending process pipe failed. " + SentBytes + " bytes sent, " + Pipe.ReadAvail() + " bytes still available.")
-			MemFree(Buffer)
-			Return
-		End If
-				
+	While True
 		If MilliSecs() > LastPipeActivityMS + Parameters.PipeTimeout
 			' Simply break out of the loop if the pipe stays empty for too long
 			Exit
@@ -423,6 +417,12 @@ Function SendProcessPipe(Process:TProcess, Pipe:TPipeStream, Parameters:ServeThr
 		
 		If ActualBytes <> DesiredBytes
 			LoggedPrint("Wanted to read " + DesiredBytes + " bytes but got " + ActualBytes + " bytes. Continuing.")
+		End If
+		
+		If RunAbilityCheck(Parameters) = 0
+			LoggedPrint("Sending process pipe failed. " + SentBytes + " bytes sent, " + Pipe.ReadAvail() + " bytes still available.")
+			MemFree(Buffer)
+			Return
 		End If
 		
 		Status = Parameters.ClientSocket.Send(Buffer, ActualBytes)
