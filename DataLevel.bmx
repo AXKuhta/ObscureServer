@@ -528,12 +528,12 @@ End Function
 Function RunAbilityCheck:Int(Parameters:ServeThreadParameters, EnableTimeout:Int = 0)
 	Local InactiveTime:ULong = MilliSecs() - Parameters.ThreadLastActivityMS
 	
-	If (InactiveTime > Parameters.Timeout) And (EnableTimeout = 1)
-			LoggedPrint("Timed out.")
-			Return 0
-	ElseIf Not SocketConnected(Parameters.ClientSocket)
-			LoggedPrint("Client unexpectedly disconnected.")
-			Return 0
+	If Eof(Parameters.ClientStream)
+		LoggedPrint("Client suddenly disconnected.")
+		Return 0
+	Else If (InactiveTime > Parameters.Timeout) And (EnableTimeout = 1)
+		LoggedPrint("Timed out.")
+		Return 0
 	End If
 	
 	Return 1
