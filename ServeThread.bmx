@@ -87,7 +87,6 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		
 		' Parse headers
 		Repeat
-			If RunAbilityCheck(Parameters) = 0 Then Return
 			Headers = Headers[..i + 1]
 			Headers[i] = ReadLine(ClientStream)
 			
@@ -133,7 +132,8 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 			End Select
 						
 			i :+ 1
-		Until (Headers[i - 1] = "") Or SocketReadAvail(ClientSocket) = 0
+			If Not RunAbilityCheck(Parameters) Then Return
+		Until (Headers[i - 1] = "")
 		
 		
 		If IsInArray("keep-alive", Parameters.ConnectionFlags) And Parameters.KeepAliveAllowed = 1
