@@ -12,7 +12,7 @@ Type HTTPRequestStruct
 	Field Destination:String
 	Field RangeStart:Long = 0
 	Field RangeStop:Long = 0
-	Field Payload:MemoryVec
+	Field Payload:MemoryVec = Null
 End Type
 
 Function GetRequestHeaderValue:String(Request:String[], Target:String)

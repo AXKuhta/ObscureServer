@@ -65,7 +65,6 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		Parameters.ExpectsContinue = 0
 		Parameters.EncodingMode = ""
 		
-		ParsedRequest.Payload = Null ' Zero out the payload pointer
 		Headers = Null
 		PayloadLength = 0
 		i = 0
