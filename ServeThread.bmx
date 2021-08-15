@@ -193,7 +193,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		End Select
 		
 		' Free the payload memory if it was ever allocated
-		If ParsedRequest.Payload.Pointer Then MemFree(ParsedRequest.Payload.Pointer)
+		If ParsedRequest.Payload Then MemFree(ParsedRequest.Payload.Pointer)
 		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
