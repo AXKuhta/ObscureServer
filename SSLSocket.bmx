@@ -224,22 +224,16 @@ Type TSSLSocket Extends TSocket
 	Function sslsocket_mbedtls_test_cert_parse(Socket:TSSLSocket)
 		Local Status:Int
 		
-		Status = Socket.mbedtls_cert.Parse(testServerCertificate, testServerCertificateLength)
+		Status = Socket.mbedtls_cert.ParseFile("cert.pem")
 		
 		If Status
 			RuntimeError "TX509Cert.Parse() error: " + Status
-		End If
-		
-		Status = Socket.mbedtls_cert.Parse(testCaCertificatePem(), testCaCertificatePemLength)
-		
-		If Status
-			RuntimeError "TX509Cert.Parse() pem error: " + Status
 		End If
 	End Function
 	
 	' Parse the embedded test RSA key
 	Function sslsocket_mbedtls_test_pkey_parse(Socket:TSSLSocket)
-		Local Status:Int = Socket.mbedtls_pk.ParseKey(testServerKey, testServerKeyLength)
+		Local Status:Int = Socket.mbedtls_pk.ParseKeyFile("privkey.pem")
 		
 		If Status
 			RuntimeError "TPkContext.ParseKey() error: " + Status
@@ -277,8 +271,7 @@ Type TSSLSocket Extends TSocket
 		Socket.mbedtls_config.RNG(RandomFunc, Socket.mbedtls_rctx)
 		Socket.mbedtls_config.DBG(MBedSSLDebug, Null)
 		Socket.mbedtls_config.SetDebugThreshold(1)
-		
-		Socket.mbedtls_config.CaChain(Socket.mbedtls_cert.GetNext(), Null)
+		Socket.mbedtls_config.CaChain(Socket.mbedtls_cert, Null)
 		
 		Status = Socket.mbedtls_config.OwnCert(Socket.mbedtls_cert, Socket.mbedtls_pk)
 		
