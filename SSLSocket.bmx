@@ -242,7 +242,7 @@ Type TSSLSocket Extends TSocket
 	
 	' Bind the listening socket
 	Function sslsocket_mbedtls_bind(Socket:TSSLSocket, Port:String)
-		Local Status:Int = Socket.mbedtls_listen_socket.Bind("192.168.1.101", Port, MBEDTLS_NET_PROTO_TCP)
+		Local Status:Int = Socket.mbedtls_listen_socket.Bind("0.0.0.0", Port, MBEDTLS_NET_PROTO_TCP)
 		
 		If Status
 			RuntimeError "TNetContext.Bind() error: " + Status
