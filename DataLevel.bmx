@@ -383,8 +383,8 @@ Function SendStreamToClient(SourceStream:TStream, Size:Long, Parameters:ServeThr
 	MemFree(Buffer)
 End Function
 
-' This function is utilized to relay the content of pipes
-Function SendPipeToClient(Pipe:TPipeStream, Parameters:ServeThreadParameters)
+' This function is utilized to relay the content of the process' pipes
+Function SendProcessPipe(Process:TProcess, Pipe:TPipeStream, Parameters:ServeThreadParameters)
 	Local LastPipeActivityMS:ULong = MilliSecs()
 	Local DesiredBytes:Long = 0
 	Local ActualBytes:Long = 0
@@ -392,16 +392,10 @@ Function SendPipeToClient(Pipe:TPipeStream, Parameters:ServeThreadParameters)
 	Local BPC:Size_T = Parameters.BytesPerCycle
 	Local Buffer:Byte Ptr = MemAlloc(BPC)
 	Local Status:Int
-		
+	
 	WriteLine(Parameters.ClientStream, "") ' Assuming nothing sent a CRLF CRLF to the client up to this point
 	
-	While True	
-		If RunAbilityCheck(Parameters) = 0
-			LoggedPrint("Sending pipe failed. " + SentBytes + " bytes sent, " + Pipe.ReadAvail() + " bytes still available.")
-			MemFree(Buffer)
-			Return
-		End If
-				
+	While True
 		If MilliSecs() > LastPipeActivityMS + Parameters.PipeTimeout
 			' Simply break out of the loop if the pipe stays empty for too long
 			Exit
@@ -410,7 +404,12 @@ Function SendPipeToClient(Pipe:TPipeStream, Parameters:ServeThreadParameters)
 		If Pipe.ReadAvail() > 0
 			LastPipeActivityMS = MilliSecs()
 		Else
-			Continue
+			If ProcessStatus(Process) <> 0
+				sched_yield()
+				Continue
+			Else
+				Exit
+			End If
 		End If
 	
 		DesiredBytes = Min(BPC, Pipe.ReadAvail())
@@ -418,6 +417,12 @@ Function SendPipeToClient(Pipe:TPipeStream, Parameters:ServeThreadParameters)
 		
 		If ActualBytes <> DesiredBytes
 			LoggedPrint("Wanted to read " + DesiredBytes + " bytes but got " + ActualBytes + " bytes. Continuing.")
+		End If
+		
+		If RunAbilityCheck(Parameters) = 0
+			LoggedPrint("Sending process pipe failed. " + SentBytes + " bytes sent, " + Pipe.ReadAvail() + " bytes still available.")
+			MemFree(Buffer)
+			Return
 		End If
 		
 		Status = Parameters.ClientSocket.Send(Buffer, ActualBytes)
@@ -523,12 +528,12 @@ End Function
 Function RunAbilityCheck:Int(Parameters:ServeThreadParameters, EnableTimeout:Int = 0)
 	Local InactiveTime:ULong = MilliSecs() - Parameters.ThreadLastActivityMS
 	
-	If (InactiveTime > Parameters.Timeout) And (EnableTimeout = 1)
-			LoggedPrint("Timed out.")
-			Return 0
-	ElseIf Not SocketConnected(Parameters.ClientSocket)
-			LoggedPrint("Client unexpectedly disconnected.")
-			Return 0
+	If Eof(Parameters.ClientStream)
+		LoggedPrint("Client suddenly disconnected.")
+		Return 0
+	Else If (InactiveTime > Parameters.Timeout) And (EnableTimeout = 1)
+		LoggedPrint("Timed out.")
+		Return 0
 	End If
 	
 	Return 1

@@ -29,7 +29,7 @@ While True
 		Parameters.PipeTimeout = 250 ' Don't wait much for pipes
 		Parameters.PayloadTimeout = 3000 ' For how long the server will wait for payload to go through
 		
-		Parameters.BytesPerCycle = 16*1024 '16 * 1024
+		Parameters.BytesPerCycle = 64*1024 ' Transmit buffer size. I believe the optimal value is (System RAM / 65536), but not less than the filesystem cluster size 
 		Parameters.CompressionSizeLimit = 4 * 1024 * 1024 ' Compression size limit of 4MB; Trying to compress large files can cause noticeable delays
 		Parameters.EnableHostnameLookup = 0
 		Parameters.EnableCompression = 1

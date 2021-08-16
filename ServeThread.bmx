@@ -53,7 +53,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		Repeat
 			If RunAbilityCheck(Parameters, 1) = 0 Then Return
 			If SocketReadAvail(ClientSocket) > 0 Then Exit
-			UDelay 200 ' Take a 200 microsecond nap
+			ClientSocket.Recv(Null, 0)
 		Forever
 		
 		LoggedPrint("Got request.")
@@ -65,11 +65,12 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		Parameters.ExpectsContinue = 0
 		Parameters.EncodingMode = ""
 		
-		ParsedRequest.Payload = Null ' Zero out the payload pointer
 		Headers = Null
 		PayloadLength = 0
 		i = 0
 		
+		
+		' Parse request
 		ParsedRequest = ParseRequest(ReadLine(ClientStream))
 		
 		If Not ParsedRequest
@@ -77,8 +78,14 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 			Return
 		End If
 		
+		If ParsedRequest.Version = "HTTP/1.1" And Parameters.KeepAliveAllowed = 1
+			LoggedPrint("Keep-alive enabled per protocol version.")
+			Parameters.KeepAliveEnabled = 1
+		End If
+		
+		
+		' Parse headers
 		Repeat
-			If RunAbilityCheck(Parameters) = 0 Then Return
 			Headers = Headers[..i + 1]
 			Headers[i] = ReadLine(ClientStream)
 			
@@ -124,11 +131,12 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 			End Select
 						
 			i :+ 1
-		Until (Headers[i - 1] = "") Or (SocketReadAvail(ClientSocket) = 0)
+			If Not RunAbilityCheck(Parameters) Then Return
+		Until (Headers[i - 1] = "")
 		
 		
-		If IsInArray("keep-alive", Parameters.ConnectionFlags) And (Parameters.KeepAliveAllowed = 1)
-			LoggedPrint("Keep-alive mode enabled.")
+		If IsInArray("keep-alive", Parameters.ConnectionFlags) And Parameters.KeepAliveAllowed = 1
+			LoggedPrint("Keep-alive enabled per header.")
 			Parameters.KeepAliveEnabled = 1
 		End If
 		
@@ -138,7 +146,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 		
-		If (SocketReadAvail(ClientSocket) > 0) And (PayloadLength = 0)
+		If SocketReadAvail(ClientSocket) > 0 And PayloadLength = 0
 			LoggedPrint("There's "+SocketReadAvail(ClientSocket)+" bytes of payload within the request but no Content-Length header.")
 			PayloadLength = SocketReadAvail(ClientSocket) ' We'll set the length ourselves if that happened
 		End If
@@ -185,11 +193,11 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		End Select
 		
 		' Free the payload memory if it was ever allocated
-		If ParsedRequest.Payload.Pointer Then MemFree(ParsedRequest.Payload.Pointer)
+		If ParsedRequest.Payload Then MemFree(ParsedRequest.Payload.Pointer)
 		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
-	Until ((Parameters.KeepAliveEnabled = 0) Or (RunAbilityCheck(Parameters) = 0))
+	Until Parameters.KeepAliveEnabled = 0 Or RunAbilityCheck(Parameters) = 0
 End Function
 
 

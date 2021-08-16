@@ -26,7 +26,7 @@ The following list of tested software should give you an idea about the server's
   File downloads, upload, renames and removes work. WebDAV XML compression also works.
   
 - MiXPlorer:
-  Fails if compression is enabled, otherwise works but still janky.
+  Functions, also with WebDAV XML compression.
   
 - WinSCP:
   Works but janky. Doesn't use compression at all.
@@ -42,7 +42,7 @@ The following list of tested software should give you an idea about the server's
 
 Any [recent version of BlitzMaxNG](https://github.com/bmx-ng/bmx-ng/releases) should work (This code will not compile on classic BlitzMax!)
 
-Additionally it needs [BaH.zstd](https://github.com/maxmods/bah.mod/tree/master/zstd.mod). If you don't want to download the entire bah.mod repository just to use this single module, I can provide you with a [standalone copy](https://drive.google.com/open?id=19bKMtVVkFGps5XnjB8qLUGs5liB_vE72) (zstd version 1.4.3). Extract the contents into the mod directory of your BlitzMax installation. As of BlitzMaxNG 0.129 a [small one-line change](https://github.com/maxmods/bah.mod/issues/87) is required in BaH.zstd code.
+Additionally it needs [BaH.zstd](https://github.com/maxmods/bah.mod/tree/master/zstd.mod). If you don't want to download the entire bah.mod repository just to use this single module, I can provide you with a [standalone copy](https://github.com/AXKuhta/ObscureServer/releases/download/not-a-release/bah.mod.zstd.v1.4.8.zip) (zstd version 1.4.8; needs BlitzMaxNG v0.129 or newer). Extract the contents into the mod directory of your BlitzMax installation.
 
 On Windows, open the Srv.bmx in MaxIDE and build it in non-debug non-gui mode.
 

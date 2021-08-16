@@ -12,7 +12,7 @@ Type HTTPRequestStruct
 	Field Destination:String
 	Field RangeStart:Long = 0
 	Field RangeStop:Long = 0
-	Field Payload:MemoryVec
+	Field Payload:MemoryVec = Null
 End Type
 
 Function GetRequestHeaderValue:String(Request:String[], Target:String)
@@ -50,12 +50,12 @@ Function ParseRequest:HTTPRequestStruct(Request:String)
 	' If it doesn't, abort
 	If (RequestSplit.length <> 3) Then Return Null
 	
-	ReturnStruct.Action = RequestSplit[0]
-	ReturnStruct.Target = RequestSplit[1]
-	ReturnStruct.Version = RequestSplit[2]
+	ReturnStruct.Action 	= RequestSplit[0].ToUpper()
+	ReturnStruct.Target 	= RequestSplit[1]
+	ReturnStruct.Version 	= RequestSplit[2].ToUpper()
 	
 	' If the protocol is not HTTP, also fail
-	If Not Lower(ReturnStruct.Version).StartsWith("http") Then Return Null
+	If Not ReturnStruct.Version.StartsWith("HTTP") Then Return Null
 	
 	Return ReturnStruct
 End Function
