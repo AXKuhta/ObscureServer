@@ -13,9 +13,9 @@ End Extern
 
 
 Function LoggedPrint(ToPrint:String)
-	Local ThreadID:ULong = get_thread_parameters().ThreadID
+	Local ConnectionID:ULong = get_thread_parameters().ConnectionID
 
-	Print "[" + CurrentDate() + " " + CurrentTime() + "][ThreadID: " + ThreadID + "] " + ToPrint
+	Print "[" + CurrentDate() + " " + CurrentTime() + "][ConnectionID: " + ConnectionID + "] " + ToPrint
 End Function
 
 

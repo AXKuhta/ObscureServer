@@ -1,42 +1,49 @@
+SuperStrict
+
 Import BRL.Retro
 Import "Utils.bmx"
 Import "DataLevel.bmx"
 Import "ProtoHTTP.bmx"
 Import "ProtoWebDAV.bmx"
 
-Function ServeThread:Object(ParametersObject:Object)
-	Local Parameters:ServeThreadParameters = ServeThreadParameters(ParametersObject)
-	
-	set_thread_parameters(Parameters)
-	
-	Local ThreadStartupMS:ULong = MilliSecs()
-	Local ThreadStartupuS:ULong = microseconds()
-	
-	LoggedPrint(" = = = New client = = = ")
-	
-	PrintClientIP(Parameters.ClientSocket, Parameters.EnableHostnameLookup)
-		
-	Parameters.ThreadStartupMS = ThreadStartupMS
-	Parameters.ThreadLastActivityMS = ThreadStartupMS
-	
-	Parameters.ClientStream:TStream = CreateSocketStream(Parameters.ClientSocket)
-	
-	If Not Parameters.ClientStream
-		LoggedPrint("ABORTING: failed to create client stream.")
-		Return
-	End If
-	
-	' Main serving loop. We will return from this function when the client has disconnected or timed out.
-	WaitRequests(Parameters)
-	
-	CloseConnection(Parameters)
-		
-	LoggedPrint("Finished. Ran for " + (microseconds() - ThreadStartupuS) + " uSec. / " + ((microseconds() - ThreadStartupuS) / 1000000.0) + " Sec.")
-	LoggedPrint(" = = = = = = = = = = = =")
-	
-	Return
-End Function
+Type TServeThread Extends TRunnable
+	Field Parameters:ServeThreadParameters
 
+	Method New(Parameters:ServeThreadParameters)
+		Self.Parameters = Parameters
+	End Method
+	
+	Method Run()
+		set_thread_parameters(Parameters)
+		
+		Local ThreadStartupMS:ULong = MilliSecs()
+		Local ThreadStartupuS:ULong = microseconds()
+		
+		LoggedPrint(" = = = New client = = = ")
+		
+		PrintClientIP(Parameters.ClientSocket, Parameters.EnableHostnameLookup)
+			
+		Parameters.ThreadStartupMS = ThreadStartupMS
+		Parameters.ThreadLastActivityMS = ThreadStartupMS
+		
+		Parameters.ClientStream:TStream = CreateSocketStream(Parameters.ClientSocket)
+		
+		If Not Parameters.ClientStream
+			LoggedPrint("ABORTING: failed to create client stream.")
+			Return
+		End If
+		
+		' Main serving loop. We will return from this function when the client has disconnected or timed out.
+		WaitRequests(Parameters)
+		
+		CloseConnection(Parameters)
+			
+		LoggedPrint("Finished. Ran for " + (microseconds() - ThreadStartupuS) + " uSec. / " + ((microseconds() - ThreadStartupuS) / 1000000.0) + " Sec.")
+		LoggedPrint(" = = = = = = = = = = = =")
+		
+		Return
+	End Method
+End Type
 
 Function WaitRequests(Parameters:ServeThreadParameters)
 	Local ClientSocket:TSocket = Parameters.ClientSocket

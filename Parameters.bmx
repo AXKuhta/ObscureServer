@@ -16,7 +16,7 @@ Type ServeThreadParameters
 	Field ThreadStartupMS:ULong
 	Field ThreadLastActivityMS:ULong
 	Field EncodingMode:String
-	Field ThreadID:ULong
+	Field ConnectionID:ULong
 	Field BytesPerCycle:UInt
 	Field EnableHostnameLookup:Int
 	Field EnableCompression:Int

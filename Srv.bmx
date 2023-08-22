@@ -1,7 +1,7 @@
-Framework BRL.Threads
+Framework BRL.ThreadPool
 Import "ServeThread.bmx"
 
-Local Port:Int = 80
+Local Port:Int = 8082
 
 Local Socket:TSocket = CreateTCPSocket()
 If Not BindSocket(Socket, Port) Then RuntimeError("Failed to bind to port " + Port + "!")
@@ -10,8 +10,8 @@ SocketListen(Socket)
 
 Local SocketConnection:TSocket
 Local Parameters:ServeThreadParameters
-
-Local ThreadsTotal:ULong
+Local ThreadPool:TThreadPoolExecutor = TThreadPoolExecutor.newFixedThreadPool(128) ' Should be large to accomodate some threads sleeping in keep-alive wait
+Local ConnectionsTotal:ULong
 
 Print "Server is up on port " + Port 
 
@@ -46,10 +46,12 @@ While True
 		Parameters.MovesAllowed = 1
 		
 		Parameters.WebDAVAllowed = 1
-		Parameters.ThreadID = ThreadsTotal
+		Parameters.ConnectionID = ConnectionsTotal
 		
-		CreateThread(ServeThread, Parameters)
-		ThreadsTotal :+ 1
+		Local Task:TServeThread = New TServeThread(Parameters)
+		
+		ThreadPool.Execute(Task)
+		ConnectionsTotal :+ 1
 	End If
 	
 Wend
