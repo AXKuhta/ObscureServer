@@ -49,7 +49,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 	Local ClientSocket:TSocket = Parameters.ClientSocket
 	Local ClientStream:TStream = Parameters.ClientStream
 	Local ParsedRequest:HTTPRequestStruct
-	Local Headers:String[]
+	Local Header:String
 	Local Payload:Byte[]
 	Local PayloadLength:Long
 	Local i:Int
@@ -72,7 +72,6 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		Parameters.ExpectsContinue = 0
 		Parameters.EncodingMode = ""
 		
-		Headers = Null
 		PayloadLength = 0
 		i = 0
 		
@@ -93,40 +92,39 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		
 		' Parse headers
 		Repeat
-			Headers = Headers[..i + 1]
-			Headers[i] = ReadLine(ClientStream)
+			Header = ReadLine(ClientStream)
 			
-			'If Len(Headers[i]) > 2048
+			'If Len(Header) > 2048
 			'	LoggedPrint("ABORTING: Header line too long.")
 			'	Return
 			'End If
 			
-			Select Lower(Headers[i].Split(":")[0])
+			Select Lower(Header.Split(":")[0])
 				Case "connection"
-					Parameters.ConnectionFlags = ExtractHeaderFlags(Headers[i])
+					Parameters.ConnectionFlags = ExtractHeaderFlags(Header)
 					
 				Case "content-length"
-					PayloadLength = Long(ExtractHeaderFlags(Headers[i])[0])
+					PayloadLength = Long(ExtractHeaderFlags(Header)[0])
 					LoggedPrint("Got a hint for payload length: " + PayloadLength)
 
 				Case "accept-encoding"
-					If IsInArray("gzip", ExtractHeaderFlags(Headers[i])) Then Parameters.EncodingMode = "gzip"
-					If IsInArray("zstd", ExtractHeaderFlags(Headers[i])) Then Parameters.EncodingMode = "zstd"
+					If IsInArray("gzip", ExtractHeaderFlags(Header)) Then Parameters.EncodingMode = "gzip"
+					If IsInArray("zstd", ExtractHeaderFlags(Header)) Then Parameters.EncodingMode = "zstd"
 					
 				Case "content-encoding"
-					Parameters.RequestPayloadEncodingMode = ExtractHeaderFlags(Headers[i])[0]
+					Parameters.RequestPayloadEncodingMode = ExtractHeaderFlags(Header)[0]
 					
 				Case "destination"
-					ParsedRequest.Destination = ParseDestination(ExtractHeaderFlags(Headers[i])[0])
+					ParsedRequest.Destination = ParseDestination(ExtractHeaderFlags(Header)[0])
 					LoggedPrint("Got destination: " + ParsedRequest.Destination)
 				
 				Case "expect"
-					If IsInArray("100-continue", ExtractHeaderFlags(Headers[i])) Then Parameters.ExpectsContinue = 1
-					LoggedPrint("Got a hint for expected response: " + ExtractHeaderFlags(Headers[i])[0] + ".")
+					If IsInArray("100-continue", ExtractHeaderFlags(Header)) Then Parameters.ExpectsContinue = 1
+					LoggedPrint("Got a hint for expected response: " + ExtractHeaderFlags(Header)[0] + ".")
 					
 				Case "range"
-					ParsedRequest.RangeStart = ExtractRanges(Headers[i])[0]
-					ParsedRequest.RangeStop = ExtractRanges(Headers[i])[1]
+					ParsedRequest.RangeStart = ExtractRanges(Header)[0]
+					ParsedRequest.RangeStop = ExtractRanges(Header)[1]
 					LoggedPrint("Got ranges: " + ParsedRequest.RangeStart + "-" + ParsedRequest.RangeStop)
 					
 				
@@ -134,12 +132,12 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 				Default
 					' If something doesn't work, uncomment this
 					' Perhaps there's some problem with case sensetivity happening
-					' LoggedPrint("Unknown header: " + Header[i])
+					' LoggedPrint("Unknown header: " + Header)
 			End Select
 						
 			i :+ 1
 			If Not RunAbilityCheck(Parameters) Then Return
-		Until (Headers[i - 1] = "")
+		Until Header = ""
 		
 		
 		If IsInArray("keep-alive", Parameters.ConnectionFlags) And Parameters.KeepAliveAllowed = 1
