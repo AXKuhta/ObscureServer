@@ -1,15 +1,13 @@
 Framework BRL.ThreadPool
 Import "ServeThread.bmx"
 
-Local Port:Int = 8082
+Local Port:Int = 80
 
 Local Socket:TSocket = CreateTCPSocket()
 If Not BindSocket(Socket, Port) Then RuntimeError("Failed to bind to port " + Port + "!")
 
 SocketListen(Socket)
 
-Local SocketConnection:TSocket
-Local Parameters:ServeThreadParameters
 Local ThreadPool:TThreadPoolExecutor = TThreadPoolExecutor.newFixedThreadPool(128) ' Should be large to accomodate some threads sleeping in keep-alive wait
 Local ConnectionsTotal:ULong
 
@@ -18,10 +16,10 @@ Print "Server is up on port " + Port
 While True
 	' You can enable blocking mode on SocketAccept() by passing -1 as timeout
 	' You can also set it to some amount of time (in ms), if you still want the non-blocking mode
-	SocketConnection = SocketAccept(Socket, -1)
+	Local SocketConnection:TSocket = SocketAccept(Socket, -1)
 
 	If SocketConnection
-		Parameters = New ServeThreadParameters
+		Local Parameters:ServeThreadParameters = New ServeThreadParameters
 		
 		Parameters.ClientSocket = SocketConnection
 		
