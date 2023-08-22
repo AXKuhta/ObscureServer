@@ -94,15 +94,15 @@ End Function
 
 ' This function will generate a completely random string
 ' It will generate only standard ASCII letters, no special symbols
-Function GenerateRandomString:String(Length:Int)
-	Local Memory:Byte Ptr = MemAlloc(Size_T(Length))
+Function GenerateRandomString:String(length:Int)
+	Local Memory:Byte Ptr = MemAlloc(Size_T(length))
 	Local Result:String
 	
-	For Local i=0 To (Length - 1)
+	For Local i=0 To (length - 1)
 		Memory[i] = Rnd(94) + 33
 	Next
 	
-	Result = String.FromBytes(Memory, Length)
+	Result = String.FromBytes(Memory, length)
 	MemFree(Memory)
 	Return Result
 End Function
@@ -110,29 +110,29 @@ End Function
 
 Function GetKiloseconds:String(ms:Long)
 	Local Unit:String
-	Local Time:String
+	Local time:String
 	
 	If ms < 1000
-		Time = ms
+		time = ms
 		Unit = "ms"
 	ElseIf ms < 1000 * 1000
-		Time = ms / 10
+		time = ms / 10
 		Unit = "seconds"
 	ElseIf ms < 1000 * 1000 * 1000
-		Time = ms / 1000 / 10
+		time = ms / 1000 / 10
 		Unit = "kiloseconds"
 	ElseIf ms < 1000 * 1000 * 1000 * 1000
-		Time = ms / 1000 / 1000 / 10
+		time = ms / 1000 / 1000 / 10
 		Unit = "megaseconds"
 	Else
-		Time = ms / 1000 / 1000 / 1000 / 10
+		time = ms / 1000 / 1000 / 1000 / 10
 		Unit = "gigaseconds"
 	End If
 	
 	' Insert a point before the two rightmost digits
-	Time = Left(Time, Len(Time) - 2) + "." + Right(Time, 2)
+	time = Left(time, Len(time) - 2) + "." + Right(time, 2)
 		
-	Return Time + " " + Unit
+	Return time + " " + Unit
 End Function
 
 ' This function converts time produced by functions like FileTime() into an HTTP-compliant human readable string
