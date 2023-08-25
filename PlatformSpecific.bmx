@@ -1,17 +1,25 @@
 Import BRL.Socket
-Import PUB.Zlib
 Import BAH.Zstd
 Import BRL.StandardIO
 Import "Utils.bmx"
 
-Extern
-	Function sched_yield:Int()
+Import "extras/interface_miniz.c"
 
-	?ptr64 And Not win32
-	Function crc32:ULong( crc:ULong,source:Byte Ptr,source_len:ULong )="unsigned long crc32(unsigned long, const void *, unsigned int)"
-	?ptr32 Or win32
-	Function crc32:ULong( crc:UInt,source:Byte Ptr,source_len:UInt )="unsigned long crc32(unsigned long, const void *, unsigned int)"
-	?
+Extern
+	' OS
+	Function sched_yield:Int()	
+	
+	' MiniZ
+	Function mz_crc32:Int( crc:Int, addr:Byte Ptr, size:Size_T )
+	Function alloc_miniz_encoder:Byte Ptr(dst:Byte Ptr, dst_len:Size_T)
+	Function alloc_miniz_decoder:Byte Ptr(dst:Byte Ptr, dst_len:Size_T)
+	Function free_miniz_stream(stream:Byte Ptr)
+	Function provide_miniz_encoder_input:Int(stream:Byte Ptr, src:Byte Ptr, src_len:Size_T)
+	Function provide_miniz_decoder_input:Int(stream:Byte Ptr, src:Byte Ptr, src_len:Size_T)
+	Function finish_miniz_encoder_input:Int(stream:Byte Ptr)
+	Function finish_miniz_decoder_input:Int(stream:Byte Ptr)
+	Function harvest_miniz_output:Int(stream:Byte Ptr)
+	Function number_miniz_unused_bytes:Int(stream:Byte Ptr)
 End Extern
 
 Function PrintClientIP(ClientSocket:TSocket, LookupHostname:Int = 0)
@@ -22,59 +30,58 @@ Function PrintClientIP(ClientSocket:TSocket, LookupHostname:Int = 0)
 	End If
 End Function
 
-Function GzipMemory:Int(CompressedMemory:Byte Ptr, CompressedSize:Size_T Var, UncompressedMemory:Byte Ptr, Size:Size_T)
+Function GzipMemory:Int(Destination:Byte Ptr, CompressedSize:Size_T Var, Source:Byte Ptr, Size:Size_T)
+	Local CompressedSize2:Size_T = CompressedSize - 14
 	Local UncompressedCRC:Int = 0
-	Local Status:Int
-	?ptr64 And Not win32
-	Local CompressedSize2:ULong = CompressedSize
-	?ptr32 Or win32
-	Local CompressedSize2:UInt = CompressedSize
-	?
-		
-	UncompressedCRC = crc32(0, UncompressedMemory, UInt(Size))
 	
-	' Note the CompressedMemory + 8, this is done to have 8 additional free bytes for gzip header to fit
-	' We will also overwrite two bytes of zlib header that compress() adds
-	Status = compress(CompressedMemory + 8, CompressedSize2, UncompressedMemory, UInt(Size))
+	UncompressedCRC = mz_crc32(0, Source, Size)
 	
-	CompressedSize = CompressedSize2 + 8
+	Local Stream:Byte Ptr = alloc_miniz_encoder(Destination + 10, CompressedSize2)
+	Local Status:Int = provide_miniz_encoder_input(Stream, Source, Size)
+
+	If Status
+		LoggedPrint("MiniZ encode error: " + Status)
+		free_miniz_stream(Stream)
+		Return Status
+	End If
 	
-	' Hacky stuff. Manually add gzip header and replace adler32 tail with crc32 tail
-	CompressedMemory[0] = $1F ' + gzip magic
-	CompressedMemory[1] = $8B ' / 
+	finish_miniz_encoder_input(Stream)
+	CompressedSize2 = harvest_miniz_output(Stream)
 	
-	CompressedMemory[2] = 8 ' This is the compression method. 8 is gzip's default
-	CompressedMemory[3] = %00000001 ' This is the flag byte. Rightmost bit is "FTEXT"
+	' Manually add gzip header
+	' Hacky stuff
+	Destination[0] = $1F ' + gzip magic
+	Destination[1] = $8B ' / 
 	
-	CompressedMemory[4] = 0 ' + These four bytes are supposed to be a timestamp, but we'll leave them empty
-	CompressedMemory[5] = 0 ' |
-	CompressedMemory[6] = 0 ' |
-	CompressedMemory[7] = 0 ' /
+	Destination[2] = 8 ' This is the compression method. 8 is gzip's default
+	Destination[3] = %00000001 ' This is the flag byte. Rightmost bit is "FTEXT"
 	
-	CompressedMemory[8] = 2 ' Extra flags. 2 means that slowest compression was used
-	CompressedMemory[9] = 255 ' OS identificator. 255 means unknown
+	Destination[4] = 0 ' + These four bytes are supposed to be a timestamp, but we'll leave them empty
+	Destination[5] = 0 ' |
+	Destination[6] = 0 ' |
+	Destination[7] = 0 ' /
+	
+	Destination[8] = 2 ' Extra flags. 2 means that slowest compression was used
+	Destination[9] = 255 ' OS identificator. 255 means unknown
 	
 	' Add two 4-byte fields at the tail: original data CRC and original length
 	' These are not essential, you can omit them -- but gzip will warn about early end of file
 	' I also know that this will make cetrain proxies spill their memory -- right into the file you attempted to download!
-	Local Tail:Int Ptr = Int Ptr (CompressedMemory + CompressedSize - 4)
-	Tail[0] = UncompressedCRC
-	Tail[1] = Size
+	Local ModuloSize:UInt = Size Mod (2^32)
 	
-	' What a mess
-	CompressedSize :+ 4
+	MemCopy(Destination + 10 + CompressedSize2 + 0, Varptr UncompressedCRC, 4)
+	MemCopy(Destination + 10 + CompressedSize2 + 4, Varptr ModuloSize, 4)
+
+	CompressedSize = CompressedSize2 + 18
 	
-	Return Status
+	free_miniz_stream(Stream)
+	Return 0
 End Function
 
 ' This function will taint the source memory!
-Function UnGzipMemory:Int(UncompressedMemory:Byte Ptr, Size:Size_T Var, CompressedMemory:Byte Ptr, CompressedSize:Size_T)
+Function UnGzipMemory:Int(Destination:Byte Ptr, Size:Size_T Var, Source:Byte Ptr, CompressedSize:Size_T)
 	Local Status:Int
-	?ptr64 And Not win32
-	Local Size2:ULong = Size
-	?ptr32 Or win32
-	Local Size2:UInt = Size
-	?
+	Local Size2:Size_T = Size
 	
 	Local StoredCRC:Int = 0
 	Local ActualCRC:Int = 0
@@ -85,22 +92,22 @@ Function UnGzipMemory:Int(UncompressedMemory:Byte Ptr, Size:Size_T Var, Compress
 		Return -1
 	End If
 	
-	' Manually add a zlib-compatible header
-	CompressedMemory[8] = $78 ' + DEFLATE algorithm
-	CompressedMemory[9] = $DA ' + Slowest compression
+	Local Stream:Byte Ptr = alloc_miniz_decoder(Destination, Size)
 
-	' We can't really replace the crc32 checksum with an adler32 checksum for the data that we didn't yet decompress
-	' Status will always return -3 (Z_DATA_ERROR) as a result
-	' You just kinda have to assume data was not actually corrupted
-	Status = uncompress(UncompressedMemory, Size2, CompressedMemory + 8, UInt(CompressedSize) - 8)
+	Status = provide_miniz_decoder_input(Stream, Source + 10, CompressedSize - 18)
 	
-	If Status = -3 Then Status = 0
+	If Status
+		LoggedPrint("MiniZ decode error: " + Status)
+		free_miniz_stream(Stream)
+		Return Status
+	End If
 	
-	' But you know what we can do? We can validate the crc32 checksum ourselves!
+	finish_miniz_decoder_input(Stream)
+	free_miniz_stream(Stream)
+	
 	If Size2 > 0
-		ActualCRC = crc32(0, UncompressedMemory, UInt(Size2))
-		
-		StoredCRC = (Int Ptr (CompressedMemory + CompressedSize - 8))[0]
+		ActualCRC = mz_crc32(0, Destination, UInt(Size2))
+		StoredCRC = (Int Ptr (Source + CompressedSize - 8))[0]
 				
 		If StoredCRC <> ActualCRC
 			Print "UnGzipMemory: CRC32 checksum didn't match"

@@ -25,7 +25,7 @@ Type ServeThreadParameters
 	Field CachingLocation:String
 	Field RequestPayloadCompressionAllowed:Int
 	Field RequestPayloadEncodingMode:String
-	Field RequestPayloadLengthLimit:Int
+	Field RequestPayloadLengthLimit:Size_T
 	Field FilesizeAfterUpdateLimit:Long
 	Field ConnectionFlags:String[]
 	Field ExpectsContinue:Int

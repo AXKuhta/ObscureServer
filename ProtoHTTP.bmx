@@ -1,6 +1,7 @@
 Import BRL.Retro
 Import "Parameters.bmx"
 Import "DataLevel.bmx"
+Import "DataLevelV2.bmx"
 
 ' This file contains functions and structures that are specific to HTTP protocol
 
@@ -12,7 +13,7 @@ Type HTTPRequestStruct
 	Field Destination:String
 	Field RangeStart:Long = 0
 	Field RangeStop:Long = 0
-	Field Payload:MemoryVec = Null
+	Field PayloadSize:Size_T = 0
 End Type
 
 Function GetRequestHeaderValue:String(Request:String[], Target:String)
@@ -188,9 +189,10 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 	Local TargetSize:Long
 	Local TargetType:Int = FileType(ParsedRequest.Target)
 	Local TargetDir:String = ExtractDir(ParsedRequest.Target)
-	Local Status:Int
+	Local Result:Size_T
+	Local File:TStream
 
-	LoggedPrint("Incoming file. Name: "+ParsedRequest.Target+"; Size: "+(ParsedRequest.Payload.Size / 1024)+"KB.")
+	LoggedPrint("Incoming file. Name: "+ParsedRequest.Target)
 	
 	If Not Parameters.UploadsAllowed
 		LoggedPrint("Got a file upload, but that's not allowed. No changes to filesystem made.")
@@ -216,34 +218,57 @@ Function ProcessUploadRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		Return
 	End If
 	
-	
-	If (ParsedRequest.Action = "PUT") Or (TargetType = 0)
-		' With PUT requests we must overwrite the file
-		' And if this is a POST and the file doesn't exist yet, we must create it
-		ResponseCode = 204
-		
+	' With PUT requests we must overwrite the file
+	' If it's a POST and the file does exist, we must update it
+	' And if this is a POST and the file doesn't exist yet, we must create it
+	If (ParsedRequest.Action = "PUT") Or (TargetType = 0)		
 		LoggedPrint("Creating ["+ParsedRequest.Target+"]")
-		Status = ReceiveFile(ParsedRequest.Target, ParsedRequest.Payload.Pointer, ParsedRequest.Payload.Size)
-	Else
-		' If it's a POST and the file does exist, we must update it
-		ResponseCode = 200
 		
-		If (TargetSize + ParsedRequest.Payload.Size) > Parameters.FilesizeAfterUpdateLimit
-			' If this POST request would bring the target file size over the limit, refuse to do it
+		File = WriteFile(ParsedRequest.Target)
+		
+		If Not File
+			LoggedPrint("Failed to create ["+ParsedRequest.Target+"]!")
+			SendError(500, Parameters, "Failed to create the file.")
+			Return
+		End If
+
+		ResponseCode = 204
+	Else
+		If (TargetSize + ParsedRequest.PayloadSize) > Parameters.FilesizeAfterUpdateLimit ' If this POST request would bring the target file size over the limit, refuse to do it
 			LoggedPrint("This POST would bring the file size over the limit!")
 			SendError(406, Parameters, "File is too large.")
 			Return
 		End If
 		
 		LoggedPrint("Updating ["+ParsedRequest.Target+"]")
-		Status = UpdateFile(ParsedRequest.Target, ParsedRequest.Payload.Pointer, ParsedRequest.Payload.Size)
+		
+		File = OpenFile(ParsedRequest.Target)
+		
+		If Not File
+			LoggedPrint("Failed to open ["+ParsedRequest.Target+"]!")
+			SendError(500, Parameters, "Failed to open the file.")
+			Return
+		End If
+		
+		SeekStream(File, TargetSize)
+		
+		ResponseCode = 200
 	End If
 	
-	If Status <> 0
+	' Should really go into ParsedRequest; Parameters should not change at runtime
+	If Parameters.RequestPayloadEncodingMode = "gzip"
+		Result = SocketReceive(New MiniZDecodeAdapter(File), TSocketStream(Parameters.ClientStream), ParsedRequest.PayloadSize)
+	Else
+		Result = SocketReceive(File, TSocketStream(Parameters.ClientStream), ParsedRequest.PayloadSize)
+	End If
+	
+	CloseFile(File)
+	
+	If Result = ParsedRequest.PayloadSize
+		LoggedPrint("Upload complete")
 		SendSuccess(ResponseCode, Parameters)
 	Else
-		LoggedPrint("Failed to create or update ["+ParsedRequest.Target+"]!")
-		SendError(500, Parameters, "Failed to create or update the file.")
+		LoggedPrint("Incomplete upload! " + Result/1024 + "KB from " + ParsedRequest.PayloadSize/1024 + "KB")
 	End If
 End Function
 

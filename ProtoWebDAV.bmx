@@ -22,9 +22,12 @@ Function ProcessWebDAVRequest(ParsedRequest:HTTPRequestStruct, Parameters:ServeT
 		Return
 	End If
 	
-	If ParsedRequest.Payload
-		RequestString = String.FromUTF8Bytes(ParsedRequest.Payload.Pointer, Int(ParsedRequest.Payload.Size))
-				
+	If ParsedRequest.PayloadSize
+		Local Buffer:Byte[ParsedRequest.PayloadSize]
+		
+		Parameters.ClientStream.Read(Buffer, ParsedRequest.PayloadSize)
+		RequestString = String.FromUTF8Bytes(Buffer, ParsedRequest.PayloadSize)
+
 		' TODO: Handle the creation of collections (i.e. folders)
 		' LoggedPrint("Client XML: " + RequestString)
 	Else

@@ -50,7 +50,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 	Local ClientStream:TStream = Parameters.ClientStream
 	Local ParsedRequest:HTTPRequestStruct
 	Local Header:String
-	Local Payload:Byte[]
+	Local PayloadPresent:Int = 0
 	Local PayloadLength:Long
 	Local i:Int
 
@@ -105,6 +105,7 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 					
 				Case "content-length"
 					PayloadLength = Long(ExtractHeaderFlags(Header)[0])
+					PayloadPresent = 1
 					LoggedPrint("Got a hint for payload length: " + PayloadLength)
 
 				Case "accept-encoding"
@@ -151,9 +152,8 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 		
-		If SocketReadAvail(ClientSocket) > 0 And PayloadLength = 0
+		If SocketReadAvail(ClientSocket) > 0 And PayloadPresent = 0
 			LoggedPrint("There's "+SocketReadAvail(ClientSocket)+" bytes of payload within the request but no Content-Length header.")
-			PayloadLength = SocketReadAvail(ClientSocket) ' We'll set the length ourselves if that happened
 		End If
 		
 		If PayloadLength > Parameters.RequestPayloadLengthLimit
@@ -172,9 +172,9 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 		End If
 			
 		If PayloadLength > 0
-			ParsedRequest.Payload = ReceivePayload(PayloadLength, Parameters)
+			ParsedRequest.PayloadSize = PayloadLength
 		End If
-
+		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 		
 		ParsedRequest.Target = URLDecode(ParsedRequest.Target) ' Turns "%20" into spaces
@@ -196,9 +196,6 @@ Function WaitRequests(Parameters:ServeThreadParameters)
 				SendError(405, Parameters)
 								
 		End Select
-		
-		' Free the payload memory if it was ever allocated
-		If ParsedRequest.Payload Then MemFree(ParsedRequest.Payload.Pointer)
 		
 		' = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 
